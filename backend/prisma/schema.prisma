@@ -1,0 +1,33 @@
+// Definição de dados do banco SQLite via Prisma ORM.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Usuário administrativo do sistema.
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  username  String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Projeto que roda em uma porta específica.
+// O host (localhost/IP/hostname) é montado dinamicamente no frontend.
+model Project {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  icon        String?
+  port        Int
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
