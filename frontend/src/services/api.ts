@@ -5,7 +5,11 @@ import axios from "axios";
 import { obterToken } from "../utils/authStorage";
 
 // Endereço base da API.
-const baseURL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+// Se VITE_API_URL não for informado, monta dinamicamente
+// usando o mesmo host pelo qual o painel foi acessado.
+const baseURL =
+  import.meta.env.VITE_API_URL ||
+  `${window.location.protocol}//${window.location.hostname}:3000/api`;
 
 const api = axios.create({
   baseURL,

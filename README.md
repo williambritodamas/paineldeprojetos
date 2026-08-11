@@ -189,10 +189,14 @@ GESTOR_SETOR="Nome do Gestor"
 **Frontend (`frontend/.env`):**
 
 ```env
-VITE_API_URL="http://localhost:3000/api"
+VITE_API_URL=""
 VITE_AUTOR_SISTEMA="Nome do Desenvolvedor"
 VITE_GESTOR_SETOR="Nome do Gestor"
 ```
+
+> `VITE_API_URL` vazio faz o frontend montar o endereço da API dinamicamente
+> (`http://HOST_ACESSADO:3000/api`), permitindo acesso por localhost, IP ou
+> hostname sem ajustes.
 
 > Nunca versionar arquivos `.env` — eles estão no `.gitignore`.
 
@@ -372,7 +376,9 @@ Authorization: Bearer SEU_TOKEN
 - autenticação por JWT com expiração;
 - middleware que protege as rotas administrativas;
 - validação de entrada nos controllers;
-- CORS configurado apenas para o endereço do frontend;
+- CORS configurado pela porta do frontend: aceita qualquer host
+  (localhost, IP ou hostname) desde que a origem esteja na porta do frontend
+  configurada em `FRONTEND_URL`. Origem em outra porta é negada;
 - JWT secret e demais credenciais apenas no `.env`;
 - confirmação antes da exclusão de projetos.
 

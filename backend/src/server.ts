@@ -10,10 +10,35 @@ import adminRoutes from "./routes/adminRoutes";
 
 const app = express();
 
-// Permite acesso apenas do frontend configurado.
+// Configuração do CORS.
+// Permite o acesso do frontend por localhost, IP ou hostname,
+// desde que a requisição venha da porta do frontend configurada.
 app.use(
   cors({
-    origin: config.frontendUrl,
+    origin: (origin, callback) => {
+      // Permite requisições sem origem (curl, testes, etc.).
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      try {
+        const origem = new URL(origin);
+        const portaFrontend = new URL(config.frontendUrl).port || "80";
+
+        // Aceita qualquer hostname (localhost, IP, nome do servidor),
+        // desde que esteja na mesma porta do frontend.
+        if (origem.port === portaFrontend) {
+          callback(null, true);
+          return;
+        }
+
+        // Porta diferente da do frontend: nega via ausência do cabeçalho CORS.
+        callback(null, false);
+      } catch {
+        callback(null, false);
+      }
+    },
     credentials: true,
   })
 );
