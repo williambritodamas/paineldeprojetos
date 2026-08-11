@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Estilos globais do Painel de Projetos. */
+html {
+  @apply bg-base-950 text-slate-100;
+}
+
+body {
+  @apply bg-base-950 text-slate-100 antialiased;
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Cards com bordas suaves do tema. */
+@layer components {
+  .card-padrao {
+    @apply rounded-xl border border-base-600 bg-base-800 shadow-card;
+  }
+
+  .botao-primario {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-sky-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-500/50 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .botao-secundario {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-base-600 bg-base-700 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-base-500 hover:bg-base-600 focus:outline-none focus:ring-2 focus:ring-sky-500/40;
+  }
+
+  .botao-perigo {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/50;
+  }
+
+  .campo-label {
+    @apply mb-1 block text-sm font-medium text-slate-300;
+  }
+
+  .campo-input {
+    @apply w-full rounded-lg border border-base-600 bg-base-700 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/30;
+  }
+}
