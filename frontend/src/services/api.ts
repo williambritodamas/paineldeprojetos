@@ -9,7 +9,7 @@ import { obterToken } from "../utils/authStorage";
 // usando o mesmo host pelo qual o painel foi acessado.
 const baseURL =
   import.meta.env.VITE_API_URL ||
-  `${window.location.protocol}//${window.location.hostname}:3000/api`;
+  `${window.location.protocol}//${window.location.hostname}:3001/api`;
 
 const api = axios.create({
   baseURL,

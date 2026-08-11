@@ -94,7 +94,7 @@ export default function ProjectForm({
             max={65535}
             value={porta}
             onChange={(e) => setPorta(e.target.value)}
-            placeholder="Ex.: 3001"
+            placeholder="Ex.: 3002"
             className="campo-input"
           />
         </div>

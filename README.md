@@ -11,10 +11,10 @@ A aplicação funciona como um **launchpad central**: uma única página visuali
 ```text
 PAINEL DE PROJETOS
         │
-        ├── Projeto 1 → porta 3001
-        ├── Projeto 2 → porta 3003
-        ├── Projeto 3 → porta 3005
-        └── Projeto 4 → porta 3007
+        ├── Projeto 1 → porta 3002
+        ├── Projeto 2 → porta 3004
+        ├── Projeto 3 → porta 3006
+        └── Projeto 4 → porta 3008
 ```
 
 Cada projeto é exibido com:
@@ -41,22 +41,22 @@ const urlProjeto = `${window.location.protocol}//${window.location.hostname}:${p
 ### Acesso via localhost
 
 ```text
-Painel:   http://localhost:5173
-Projeto:  http://localhost:3001
+Painel:   http://localhost:3000
+Projeto:  http://localhost:3002
 ```
 
 ### Acesso via IP
 
 ```text
-Painel:   http://192.168.1.50:5173
-Projeto:  http://192.168.1.50:3001
+Painel:   http://192.168.1.50:3000
+Projeto:  http://192.168.1.50:3002
 ```
 
 ### Acesso via hostname
 
 ```text
-Painel:   http://servidor-escola:5173
-Projeto:  http://servidor-escola:3001
+Painel:   http://servidor-escola:3000
+Projeto:  http://servidor-escola:3002
 ```
 
 O banco de dados guarda apenas a **porta** de cada projeto.
@@ -172,9 +172,9 @@ Ajuste os valores conforme necessário.
 **Backend (`backend/.env`):**
 
 ```env
-PORT=3000
+PORT=3001
 DATABASE_URL="file:./dev.db"
-FRONTEND_URL="http://localhost:5173"
+FRONTEND_URL="http://localhost:3000"
 
 JWT_SECRET="alterar_esta_chave"
 
@@ -195,7 +195,7 @@ VITE_GESTOR_SETOR="Nome do Gestor"
 ```
 
 > `VITE_API_URL` vazio faz o frontend montar o endereço da API dinamicamente
-> (`http://HOST_ACESSADO:3000/api`), permitindo acesso por localhost, IP ou
+> (`http://HOST_ACESSADO:3001/api`), permitindo acesso por localhost, IP ou
 > hostname sem ajustes.
 
 > Nunca versionar arquivos `.env` — eles estão no `.gitignore`.
@@ -238,9 +238,9 @@ npm run dev:frontend
 
 | Serviço   | Endereço                       |
 | --------- | ------------------------------ |
-| Frontend  | http://localhost:5173          |
-| Backend   | http://localhost:3000          |
-| Health    | http://localhost:3000/api/health |
+| Frontend  | http://localhost:3000          |
+| Backend   | http://localhost:3001          |
+| Health    | http://localhost:3001/api/health |
 
 ---
 
@@ -298,7 +298,7 @@ Usuários não autenticados que acessarem `/admin` são redirecionados para `/lo
 
 ## Como adicionar novos projetos
 
-1. Acesse `http://localhost:5173/login`;
+1. Acesse `http://localhost:3000/login`;
 2. Entre com o usuário administrador;
 3. Clique em **Novo Projeto**;
 4. Informe:
@@ -306,7 +306,7 @@ Usuários não autenticados que acessarem `/admin` são redirecionados para `/lo
    - nome;
    - descrição;
    - ícone;
-   - porta (ex.: `3001`);
+   - porta (ex.: `3002`);
    - ativo.
 
 Não é informada URL. O endereço é montado dinamicamente.
@@ -330,7 +330,7 @@ Não é informada URL. O endereço é montado dinamicamente.
 ### Exemplo de health check
 
 ```bash
-curl http://localhost:3000/api/health
+curl http://localhost:3001/api/health
 ```
 
 Resposta:
@@ -342,7 +342,7 @@ Resposta:
 ### Exemplo de login
 
 ```bash
-curl -X POST http://localhost:3000/api/auth/login \
+curl -X POST http://localhost:3001/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username":"admin","password":"alterar_esta_senha"}'
 ```
