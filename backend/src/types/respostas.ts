@@ -17,6 +17,7 @@ export interface ProjetoRetornoAdmin extends ProjetoRetorno {
   folderPath: string | null;
   script: string;
   autostart: boolean;
+  pm2Name: string | null;
   // Status atual do processo no PM2 (adicionado pela listagem admin).
   pm2Status?:
     | "online"
