@@ -41,6 +41,7 @@ function montarProjetoRetornoAdmin(projeto: {
   folderPath: string | null;
   script: string;
   autostart: boolean;
+  pm2Name: string | null;
   createdAt: Date;
   updatedAt: Date;
 }): ProjetoRetornoAdmin {
@@ -49,6 +50,7 @@ function montarProjetoRetornoAdmin(projeto: {
     folderPath: projeto.folderPath,
     script: projeto.script,
     autostart: projeto.autostart,
+    pm2Name: projeto.pm2Name,
   };
 }
 
@@ -130,6 +132,7 @@ export async function criarProjeto(
       folderPath: dados.folderPath?.trim() || null,
       script: dados.script?.trim() || "npm start",
       autostart: dados.autostart ?? false,
+      pm2Name: dados.pm2Name?.trim() || null,
     },
   });
   return montarProjetoRetornoAdmin(projeto);
@@ -156,6 +159,7 @@ export async function atualizarProjeto(
     folderPath?: string | null;
     script?: string;
     autostart?: boolean;
+    pm2Name?: string | null;
   } = {};
 
   if (dados.name !== undefined) {
@@ -181,6 +185,9 @@ export async function atualizarProjeto(
   }
   if (dados.autostart !== undefined) {
     dadosAtualizados.autostart = dados.autostart;
+  }
+  if (dados.pm2Name !== undefined) {
+    dadosAtualizados.pm2Name = dados.pm2Name?.trim() || null;
   }
 
   const projeto = await prisma.project.update({
