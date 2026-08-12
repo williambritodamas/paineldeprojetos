@@ -48,6 +48,7 @@ export interface CriarProjetoDTO {
   folderPath?: string | null;
   script?: string;
   autostart?: boolean;
+  pm2Name?: string | null;
 }
 
 // Dados utilizados para atualizar um projeto.
