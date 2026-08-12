@@ -7,6 +7,23 @@ export interface DadosUsuarioPublico {
   id: number;
   name: string;
   username: string;
+  role: "admin" | "user";
+}
+
+// Dados utilizados para criar um usuário.
+export interface CriarUsuarioDTO {
+  name: string;
+  username: string;
+  password: string;
+  role: "admin" | "user";
+}
+
+// Dados utilizados para atualizar um usuário.
+export interface AtualizarUsuarioDTO {
+  name?: string;
+  username?: string;
+  password?: string;
+  role?: "admin" | "user";
 }
 
 // Resposta completa da autenticação.

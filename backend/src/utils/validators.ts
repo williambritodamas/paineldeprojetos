@@ -23,6 +23,88 @@ export function validarLogin(dados: {
   return null;
 }
 
+// Valida o papel informado.
+export function validarRole(role: unknown): string | null {
+  if (role !== undefined && role !== "admin" && role !== "user") {
+    return 'O papel deve ser "admin" ou "user".';
+  }
+  return null;
+}
+
+// Valida os dados de criação de um usuário.
+export function validarCriarUsuario(dados: {
+  name?: unknown;
+  username?: unknown;
+  password?: unknown;
+  role?: unknown;
+}): string | null {
+  const { name, username, password } = dados;
+
+  if (typeof name !== "string" || name.trim().length === 0) {
+    return "O nome do usuário é obrigatório.";
+  }
+
+  if (typeof username !== "string" || username.trim().length === 0) {
+    return "O usuário é obrigatório.";
+  }
+  if (username.trim().length < 3) {
+    return "O usuário deve ter pelo menos 3 caracteres.";
+  }
+
+  if (typeof password !== "string" || password.length === 0) {
+    return "A senha é obrigatória.";
+  }
+  if (password.length < 6) {
+    return "A senha deve ter pelo menos 6 caracteres.";
+  }
+
+  const erroRole = validarRole(dados.role);
+  if (erroRole) {
+    return erroRole;
+  }
+
+  return null;
+}
+
+// Valida os dados de atualização de um usuário.
+export function validarAtualizarUsuario(dados: {
+  name?: unknown;
+  username?: unknown;
+  password?: unknown;
+  role?: unknown;
+}): string | null {
+  const { name, username, password } = dados;
+
+  if (name !== undefined && (typeof name !== "string" || name.trim().length === 0)) {
+    return "O nome do usuário é obrigatório.";
+  }
+
+  if (username !== undefined) {
+    if (typeof username !== "string" || username.trim().length === 0) {
+      return "O usuário é obrigatório.";
+    }
+    if (username.trim().length < 3) {
+      return "O usuário deve ter pelo menos 3 caracteres.";
+    }
+  }
+
+  if (password !== undefined) {
+    if (typeof password !== "string" || password.length === 0) {
+      return "A senha é obrigatória.";
+    }
+    if (password.length < 6) {
+      return "A senha deve ter pelo menos 6 caracteres.";
+    }
+  }
+
+  const erroRole = validarRole(dados.role);
+  if (erroRole) {
+    return erroRole;
+  }
+
+  return null;
+}
+
 // Valida a porta informada.
 export function validarPorta(porta: unknown): string | null {
   if (typeof porta !== "number" || !Number.isInteger(porta)) {

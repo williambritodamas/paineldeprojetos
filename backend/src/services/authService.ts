@@ -11,11 +11,13 @@ function montarUsuarioRetorno(usuario: {
   id: number;
   name: string;
   username: string;
+  role: string;
 }): UsuarioRetorno {
   return {
     id: usuario.id,
     name: usuario.name,
     username: usuario.username,
+    role: usuario.role === "admin" ? "admin" : "user",
   };
 }
 
@@ -35,7 +37,11 @@ export async function autenticar(dados: LoginDTO): Promise<RespostaLogin> {
     throw new Error("Usuário ou senha inválidos.");
   }
 
-  const token = gerarToken({ id: usuario.id, username: usuario.username });
+  const token = gerarToken({
+    id: usuario.id,
+    username: usuario.username,
+    role: usuario.role === "admin" ? "admin" : "user",
+  });
 
   return {
     token,

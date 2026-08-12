@@ -9,12 +9,14 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Usuário administrativo do sistema.
+// Usuário do sistema.
+// O papel (role) define o nível de acesso: "admin" ou "user".
 model User {
   id        Int      @id @default(autoincrement())
   name      String
   username  String   @unique
   password  String
+  role      String   @default("user")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

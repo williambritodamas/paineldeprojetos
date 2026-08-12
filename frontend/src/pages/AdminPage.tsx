@@ -3,7 +3,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Plus } from "lucide-react";
+import { LogOut, Plus, Users } from "lucide-react";
 import Header from "../components/Header";
 import StatsCard from "../components/StatsCard";
 import SearchBar from "../components/SearchBar";
@@ -21,7 +21,7 @@ import type { CriarProjetoDTO, Project } from "../types";
 type StatusFiltro = "todos" | "ativos" | "inativos";
 
 export default function AdminPage() {
-  const { user, logout } = useAuth();
+  const { user, isAdmin, logout } = useAuth();
   const navigate = useNavigate();
 
   const { projetos, carregando, erro, filtro, setFiltro, recarregar } =
@@ -124,6 +124,16 @@ export default function AdminPage() {
         subtitulo={user ? `Olá, ${user.name}` : undefined}
         acoes={
           <>
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={() => navigate("/admin/usuarios")}
+                className="botao-secundario"
+              >
+                <Users className="h-4 w-4" />
+                Usuários
+              </button>
+            )}
             <button type="button" onClick={abrirNovo} className="botao-primario">
               <Plus className="h-4 w-4" />
               Novo Projeto

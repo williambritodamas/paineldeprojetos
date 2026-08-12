@@ -21,10 +21,10 @@ export function sucessoHttp<T>(res: Response, dados: T): Response {
 
 // Gera o token JWT para o usuário autenticado.
 export function gerarToken(
-  usuario: { id: number; username: string }
+  usuario: { id: number; username: string; role: "admin" | "user" }
 ): RespostaAutenticacao["token"] {
   return jwt.sign(
-    { sub: usuario.id, username: usuario.username },
+    { sub: usuario.id, username: usuario.username, role: usuario.role },
     config.jwtSecret,
     { expiresIn: "8h" }
   );

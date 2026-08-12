@@ -26,7 +26,17 @@ export interface User {
   id: number;
   name: string;
   username: string;
+  role: "admin" | "user";
 }
+
+export interface CriarUsuarioDTO {
+  name: string;
+  username: string;
+  password: string;
+  role: "admin" | "user";
+}
+
+export type AtualizarUsuarioDTO = Partial<CriarUsuarioDTO>;
 
 export interface LoginDTO {
   username: string;

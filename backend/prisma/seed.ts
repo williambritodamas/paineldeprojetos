@@ -22,11 +22,13 @@ async function main() {
     update: {
       name: adminName,
       password: senhaHash,
+      role: "admin",
     },
     create: {
       name: adminName,
       username: adminUsername,
       password: senhaHash,
+      role: "admin",
     },
   });
 

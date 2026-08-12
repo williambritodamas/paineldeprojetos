@@ -9,6 +9,7 @@ import { erroHttp } from "../utils/helpers";
 export interface RequisicaoAutenticada extends Request {
   userId?: number;
   username?: string;
+  userRole?: "admin" | "user";
 }
 
 // Verifica o token de autorização no cabeçalho e libera a requisição.
@@ -30,6 +31,7 @@ export function authMiddleware(
     const payload = jwt.verify(token, config.jwtSecret) as {
       sub?: number;
       username?: string;
+      role?: string;
     };
 
     if (!payload.sub) {
@@ -39,6 +41,7 @@ export function authMiddleware(
 
     req.userId = payload.sub;
     req.username = payload.username;
+    req.userRole = payload.role === "admin" ? "admin" : "user";
     next();
   } catch {
     erroHttp(res, 401, "Sessão expirada ou inválida.");

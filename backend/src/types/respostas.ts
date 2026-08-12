@@ -16,6 +16,7 @@ export interface UsuarioRetorno {
   id: number;
   name: string;
   username: string;
+  role: "admin" | "user";
 }
 
 export interface RespostaLogin {
