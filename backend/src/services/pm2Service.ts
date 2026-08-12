@@ -2,8 +2,10 @@
 // Gerencia os processos dos projetos: iniciar, parar, reiniciar,
 // habilitar/desabilitar inicialização automática (pm2 save) e status.
 //
-// O nome do processo no PM2 é estável (proj-<id>), permitindo que
-// renomeações do projeto no painel não quebrem o gerenciamento.
+// O nome do processo no PM2 usa o campo configurável "pm2Name" do projeto
+// (ex.: "workshop") quando preenchido; senão, cai no padrão estável
+// "proj-<id>", permitindo que renomeações do projeto no painel não
+// quebrem o gerenciamento.
 
 import os from "os";
 import path from "path";
@@ -17,6 +19,7 @@ export interface ProjetoPm2 {
   name: string;
   folderPath: string | null;
   script: string;
+  pm2Name?: string | null;
 }
 
 // Status simplificado de um processo do PM2.
@@ -55,8 +58,14 @@ function serializar<T>(operacao: () => Promise<T>): Promise<T> {
   return resultado;
 }
 
-function nomeProcesso(id: number): string {
-  return `proj-${id}`;
+// Nome do processo no PM2.
+// Usa o nome configurado (pm2Name) quando informado; caso contrário,
+// mantém o padrão estável "proj-<id>".
+export function nomeProcesso(projeto: { id: number; pm2Name?: string | null }): string {
+  const nomeConfigurado = projeto.pm2Name?.trim();
+  return nomeConfigurado && nomeConfigurado.length > 0
+    ? nomeConfigurado
+    : `proj-${projeto.id}`;
 }
 
 function conectarAoPm2(): Promise<void> {
@@ -269,7 +278,7 @@ function montarConfigProcesso(projeto: ProjetoPm2): object {
   const { script, args } = parsearComando(projeto.script);
 
   return {
-    name: nomeProcesso(projeto.id),
+    name: nomeProcesso(projeto),
     script,
     args,
     cwd: projeto.folderPath!.trim(),
@@ -280,7 +289,7 @@ function montarConfigProcesso(projeto: ProjetoPm2): object {
 async function obterProcessoSeExistir(
   projeto: ProjetoPm2
 ): Promise<EstruturaProcesso | undefined> {
-  const nome = nomeProcesso(projeto.id);
+  const nome = nomeProcesso(projeto);
   const lista = await listarProcessos();
   return lista.find(
     (processo) => (processo.pm2_env?.name ?? processo.name) === nome
@@ -298,7 +307,7 @@ async function garantirProcesso(projeto: ProjetoPm2): Promise<string> {
     );
   }
 
-  return nomeProcesso(projeto.id);
+  return nomeProcesso(projeto);
 }
 
 // Habilita a inicialização automática: registra o processo e salva o dump.
@@ -316,7 +325,7 @@ export async function habilitarAutostart(projeto: ProjetoPm2): Promise<void> {
 export async function desabilitarAutostart(projeto: ProjetoPm2): Promise<void> {
   return serializar(() =>
     executarNoPm2(async () => {
-      await excluirProcessoNoPm2(nomeProcesso(projeto.id));
+      await excluirProcessoNoPm2(nomeProcesso(projeto));
       await salvarDump();
     })
   );
@@ -332,7 +341,7 @@ export async function iniciarProcesso(projeto: ProjetoPm2): Promise<void> {
         const config = montarConfigProcesso(projeto);
         await iniciarProcessoNoPm2(config);
       } else {
-        await reiniciarProcessoNoPm2(nomeProcesso(projeto.id));
+        await reiniciarProcessoNoPm2(nomeProcesso(projeto));
       }
     })
   );
