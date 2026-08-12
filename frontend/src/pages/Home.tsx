@@ -17,7 +17,7 @@ export default function Home() {
     <div>
       <Header
         titulo="Painel de Projetos"
-        subtitulo="Acesso rápido aos sistemas e aplicações"
+        subtitulo="Colégio Damas"
         acoes={
           <Link
             to="/login"
