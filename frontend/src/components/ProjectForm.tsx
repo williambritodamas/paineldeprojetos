@@ -27,6 +27,9 @@ export default function ProjectForm({
     projeto?.folderPath ?? ""
   );
   const [comando, setComando] = useState(projeto?.script ?? "npm start");
+  const [nomeProcesso, setNomeProcesso] = useState(
+    projeto?.pm2Name ?? ""
+  );
 
   async function aoEnviar(e: FormEvent) {
     e.preventDefault();
@@ -43,6 +46,7 @@ export default function ProjectForm({
         ? {
             folderPath: caminhoPasta.trim(),
             script: comando.trim() || "npm start",
+            pm2Name: nomeProcesso.trim() || null,
           }
         : {}),
     });
@@ -156,6 +160,27 @@ export default function ProjectForm({
               <code className="rounded bg-base-800 px-1.5 py-0.5 text-slate-400">
                 node server.js
               </code>
+            </p>
+          </div>
+
+          <div>
+            <label htmlFor="nomeProcesso" className="campo-label">
+              Nome do processo no PM2
+            </label>
+            <input
+              id="nomeProcesso"
+              type="text"
+              value={nomeProcesso}
+              onChange={(e) => setNomeProcesso(e.target.value)}
+              placeholder="Ex.: workshop"
+              className="campo-input"
+            />
+            <p className="mt-1 text-xs text-slate-500">
+              Deixe vazio para usar o padrão{" "}
+              <code className="rounded bg-base-800 px-1.5 py-0.5 text-slate-400">
+                proj-{"\u003cid\u003e"}
+              </code>{" "}
+              (apenas admin).
             </p>
           </div>
         </>
