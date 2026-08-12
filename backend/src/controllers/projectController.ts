@@ -58,7 +58,12 @@ export async function listarAdministrativo(
         };
       }
 
-      const processo = statusPorProcesso.get(`proj-${projeto.id}`);
+      const processo = statusPorProcesso.get(
+        pm2Service.nomeProcesso({
+          id: projeto.id,
+          pm2Name: projeto.pm2Name,
+        })
+      );
 
       return {
         ...projeto,
@@ -112,6 +117,7 @@ export async function criar(req: RequisicaoAutenticada, res: Response): Promise<
     folderPath: ehAdmin ? corpo.folderPath : undefined,
     script: ehAdmin ? corpo.script : undefined,
     autostart: ehAdmin ? corpo.autostart : undefined,
+    pm2Name: ehAdmin ? corpo.pm2Name : undefined,
   });
 
   if (erro) {
@@ -142,6 +148,12 @@ export async function criar(req: RequisicaoAutenticada, res: Response): Promise<
         ehAdmin && typeof corpo.autostart === "boolean"
           ? corpo.autostart
           : undefined,
+      pm2Name:
+        ehAdmin && typeof corpo.pm2Name === "string"
+          ? corpo.pm2Name
+          : ehAdmin && corpo.pm2Name === null
+            ? null
+            : undefined,
     });
 
     sucessoHttp(res, projeto);
@@ -172,6 +184,7 @@ export async function atualizar(req: RequisicaoAutenticada, res: Response): Prom
     folderPath: ehAdmin ? corpo.folderPath : undefined,
     script: ehAdmin ? corpo.script : undefined,
     autostart: ehAdmin ? corpo.autostart : undefined,
+    pm2Name: ehAdmin ? corpo.pm2Name : undefined,
   });
 
   if (erro) {
@@ -210,6 +223,12 @@ export async function atualizar(req: RequisicaoAutenticada, res: Response): Prom
         ehAdmin && typeof corpo.autostart === "boolean"
           ? corpo.autostart
           : undefined,
+      pm2Name:
+        ehAdmin && typeof corpo.pm2Name === "string"
+          ? corpo.pm2Name
+          : ehAdmin && corpo.pm2Name === null
+            ? null
+            : undefined,
     });
 
     if (!projeto) {
