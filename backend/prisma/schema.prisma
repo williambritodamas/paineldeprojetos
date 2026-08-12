@@ -36,6 +36,8 @@ model Project {
   script      String   @default("npm start")
   // Se o projeto deve ser registrado no PM2 para iniciar no boot.
   autostart   Boolean  @default(false)
+  // Nome opcional do processo no PM2. Se vazio, usa "proj-<id>".
+  pm2Name     String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
