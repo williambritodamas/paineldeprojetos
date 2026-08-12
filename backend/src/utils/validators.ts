@@ -126,8 +126,9 @@ export function validarProjeto(dados: {
   folderPath?: unknown;
   script?: unknown;
   autostart?: unknown;
+  pm2Name?: unknown;
 }): string | null {
-  const { name, description, icon, port, active, folderPath, script, autostart } =
+  const { name, description, icon, port, active, folderPath, script, autostart, pm2Name } =
     dados;
 
   if (name !== undefined) {
@@ -173,6 +174,15 @@ export function validarProjeto(dados: {
 
   if (autostart !== undefined && typeof autostart !== "boolean") {
     return "O campo de inicialização automática deve ser verdadeiro ou falso.";
+  }
+
+  if (pm2Name !== undefined && pm2Name !== null) {
+    if (typeof pm2Name !== "string") {
+      return "O nome do processo PM2 deve ser um texto.";
+    }
+    if (pm2Name.trim().length === 0) {
+      return "O nome do processo PM2 deve ser um texto.";
+    }
   }
 
   return null;
