@@ -11,6 +11,7 @@ export interface Project {
   folderPath?: string | null;
   script?: string;
   autostart?: boolean;
+  pm2Name?: string | null;
   pm2Status?:
     | "online"
     | "parado"
@@ -34,6 +35,7 @@ export interface CriarProjetoDTO {
   folderPath?: string | null;
   script?: string;
   autostart?: boolean;
+  pm2Name?: string | null;
 }
 
 export type AtualizarProjetoDTO = Partial<CriarProjetoDTO>;
