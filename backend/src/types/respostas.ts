@@ -12,6 +12,13 @@ export interface ProjetoRetorno {
   updatedAt: string;
 }
 
+// Retorno administrativo: inclui os dados de execução via PM2.
+export interface ProjetoRetornoAdmin extends ProjetoRetorno {
+  folderPath: string | null;
+  script: string;
+  autostart: boolean;
+}
+
 export interface UsuarioRetorno {
   id: number;
   name: string;

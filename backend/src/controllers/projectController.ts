@@ -64,8 +64,10 @@ export async function obter(req: RequisicaoAutenticada, res: Response): Promise<
 }
 
 // POST /api/projects — requer autenticação.
+// Campos de execução (PM2) são aceitos apenas para administradores.
 export async function criar(req: RequisicaoAutenticada, res: Response): Promise<void> {
   const corpo = lerCorpo(req);
+  const ehAdmin = req.userRole === "admin";
 
   const erro = validarProjeto({
     name: corpo.name,
@@ -73,6 +75,9 @@ export async function criar(req: RequisicaoAutenticada, res: Response): Promise<
     icon: corpo.icon,
     port: corpo.port,
     active: corpo.active,
+    folderPath: ehAdmin ? corpo.folderPath : undefined,
+    script: ehAdmin ? corpo.script : undefined,
+    autostart: ehAdmin ? corpo.autostart : undefined,
   });
 
   if (erro) {
@@ -91,6 +96,18 @@ export async function criar(req: RequisicaoAutenticada, res: Response): Promise<
         corpo.icon !== undefined && corpo.icon !== null ? String(corpo.icon) : null,
       port: Number(corpo.port),
       active: Boolean(corpo.active),
+      folderPath:
+        ehAdmin && typeof corpo.folderPath === "string"
+          ? corpo.folderPath
+          : null,
+      script:
+        ehAdmin && typeof corpo.script === "string"
+          ? corpo.script
+          : undefined,
+      autostart:
+        ehAdmin && typeof corpo.autostart === "boolean"
+          ? corpo.autostart
+          : undefined,
     });
 
     sucessoHttp(res, projeto);
@@ -100,6 +117,7 @@ export async function criar(req: RequisicaoAutenticada, res: Response): Promise<
 }
 
 // PUT /api/projects/:id — requer autenticação.
+// Campos de execução (PM2) são aceitos apenas para administradores.
 export async function atualizar(req: RequisicaoAutenticada, res: Response): Promise<void> {
   const id = Number(req.params.id);
 
@@ -109,6 +127,7 @@ export async function atualizar(req: RequisicaoAutenticada, res: Response): Prom
   }
 
   const corpo = lerCorpo(req);
+  const ehAdmin = req.userRole === "admin";
 
   const erro = validarProjeto({
     name: corpo.name,
@@ -116,6 +135,9 @@ export async function atualizar(req: RequisicaoAutenticada, res: Response): Prom
     icon: corpo.icon,
     port: corpo.port,
     active: corpo.active,
+    folderPath: ehAdmin ? corpo.folderPath : undefined,
+    script: ehAdmin ? corpo.script : undefined,
+    autostart: ehAdmin ? corpo.autostart : undefined,
   });
 
   if (erro) {
@@ -140,6 +162,20 @@ export async function atualizar(req: RequisicaoAutenticada, res: Response): Prom
             : undefined,
       port: corpo.port !== undefined ? Number(corpo.port) : undefined,
       active: corpo.active !== undefined ? Boolean(corpo.active) : undefined,
+      folderPath:
+        ehAdmin && typeof corpo.folderPath === "string"
+          ? corpo.folderPath
+          : ehAdmin && corpo.folderPath === null
+            ? null
+            : undefined,
+      script:
+        ehAdmin && typeof corpo.script === "string"
+          ? corpo.script
+          : undefined,
+      autostart:
+        ehAdmin && typeof corpo.autostart === "boolean"
+          ? corpo.autostart
+          : undefined,
     });
 
     if (!projeto) {

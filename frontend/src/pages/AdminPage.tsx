@@ -206,6 +206,7 @@ export default function AdminPage() {
               <AdminProjectCard
                 key={projeto.id}
                 project={projeto}
+                isAdmin={isAdmin}
                 aoEditar={abrirEdicao}
                 aoExcluir={(p) => setExcluindo(p)}
                 aoAlternar={aoAlternarStatus}
@@ -223,6 +224,7 @@ export default function AdminPage() {
       >
         <ProjectForm
           projeto={projetoEditando}
+          isAdmin={isAdmin}
           aoSalvar={aoSalvar}
           aoCancelar={() => setModalAberto(false)}
           salvando={salvando}

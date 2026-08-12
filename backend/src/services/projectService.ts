@@ -7,7 +7,7 @@ import type {
   CriarProjetoDTO,
   FiltroBuscaProjetos,
 } from "../types";
-import type { ProjetoRetorno } from "../types/respostas";
+import type { ProjetoRetorno, ProjetoRetornoAdmin } from "../types/respostas";
 
 function montarProjetoRetorno(projeto: {
   id: number;
@@ -31,6 +31,27 @@ function montarProjetoRetorno(projeto: {
   };
 }
 
+function montarProjetoRetornoAdmin(projeto: {
+  id: number;
+  name: string;
+  description: string | null;
+  icon: string | null;
+  port: number;
+  active: boolean;
+  folderPath: string | null;
+  script: string;
+  autostart: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}): ProjetoRetornoAdmin {
+  return {
+    ...montarProjetoRetorno(projeto),
+    folderPath: projeto.folderPath,
+    script: projeto.script,
+    autostart: projeto.autostart,
+  };
+}
+
 // Lista projetos ativos para a tela pública.
 export async function listarProjetosAtivos(): Promise<ProjetoRetorno[]> {
   const projetos = await prisma.project.findMany({
@@ -43,7 +64,7 @@ export async function listarProjetosAtivos(): Promise<ProjetoRetorno[]> {
 // Lista projetos com busca e filtro por status para a área administrativa.
 export async function listarProjetosComFiltro(
   filtro: FiltroBuscaProjetos
-): Promise<ProjetoRetorno[]> {
+): Promise<ProjetoRetornoAdmin[]> {
   const { busca, status } = filtro;
 
   const condicoesBusca: Array<{ [campo: string]: unknown }> = [];
@@ -78,7 +99,7 @@ export async function listarProjetosComFiltro(
     orderBy: { name: "asc" },
   });
 
-  return projetos.map(montarProjetoRetorno);
+  return projetos.map(montarProjetoRetornoAdmin);
 }
 
 // Retorna um projeto específico.
@@ -90,7 +111,7 @@ export async function obterProjeto(id: number): Promise<ProjetoRetorno | null> {
 // Cria um novo projeto.
 export async function criarProjeto(
   dados: CriarProjetoDTO
-): Promise<ProjetoRetorno> {
+): Promise<ProjetoRetornoAdmin> {
   const projeto = await prisma.project.create({
     data: {
       name: dados.name.trim(),
@@ -98,16 +119,19 @@ export async function criarProjeto(
       icon: dados.icon?.trim() || null,
       port: dados.port,
       active: dados.active,
+      folderPath: dados.folderPath?.trim() || null,
+      script: dados.script?.trim() || "npm start",
+      autostart: dados.autostart ?? false,
     },
   });
-  return montarProjetoRetorno(projeto);
+  return montarProjetoRetornoAdmin(projeto);
 }
 
 // Atualiza um projeto existente.
 export async function atualizarProjeto(
   id: number,
   dados: AtualizarProjetoDTO
-): Promise<ProjetoRetorno | null> {
+): Promise<ProjetoRetornoAdmin | null> {
   const existente = await prisma.project.findUnique({ where: { id } });
 
   if (!existente) {
@@ -121,6 +145,9 @@ export async function atualizarProjeto(
     icon?: string | null;
     port?: number;
     active?: boolean;
+    folderPath?: string | null;
+    script?: string;
+    autostart?: boolean;
   } = {};
 
   if (dados.name !== undefined) {
@@ -138,13 +165,22 @@ export async function atualizarProjeto(
   if (dados.active !== undefined) {
     dadosAtualizados.active = dados.active;
   }
+  if (dados.folderPath !== undefined) {
+    dadosAtualizados.folderPath = dados.folderPath?.trim() || null;
+  }
+  if (dados.script !== undefined) {
+    dadosAtualizados.script = dados.script?.trim() || "npm start";
+  }
+  if (dados.autostart !== undefined) {
+    dadosAtualizados.autostart = dados.autostart;
+  }
 
   const projeto = await prisma.project.update({
     where: { id },
     data: dadosAtualizados,
   });
 
-  return montarProjetoRetorno(projeto);
+  return montarProjetoRetornoAdmin(projeto);
 }
 
 // Exclui um projeto existente.

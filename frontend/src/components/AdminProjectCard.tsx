@@ -1,13 +1,14 @@
 // Card de projeto na área administrativa.
 // Inclui ações de edição, exclusão e ativar/desativar.
 
-import { ExternalLink, Pencil, Power, Trash2 } from "lucide-react";
+import { ExternalLink, Folder, Pencil, Power, Terminal, Trash2 } from "lucide-react";
 import type { Project } from "../types";
 import { gerarUrlProjeto } from "../utils/projectUrl";
 import StatusBadge from "./StatusBadge";
 
 interface Props {
   project: Project;
+  isAdmin: boolean;
   aoEditar: (projeto: Project) => void;
   aoExcluir: (projeto: Project) => void;
   aoAlternar: (projeto: Project) => void;
@@ -15,6 +16,7 @@ interface Props {
 
 export default function AdminProjectCard({
   project,
+  isAdmin,
   aoEditar,
   aoExcluir,
   aoAlternar,
@@ -51,6 +53,21 @@ export default function AdminProjectCard({
             Acessar
           </a>
         </div>
+
+        {isAdmin && (
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+            <span className="inline-flex min-w-0 max-w-full items-center gap-1.5">
+              <Folder className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">
+                {project.folderPath || "Pasta não configurada"}
+              </span>
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <Terminal className="h-3.5 w-3.5 shrink-0" />
+              {project.script || "npm start"}
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="flex shrink-0 flex-col items-end gap-2 sm:flex-row sm:items-start">

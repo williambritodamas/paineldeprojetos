@@ -8,6 +8,9 @@ export interface Project {
   icon: string | null;
   port: number;
   active: boolean;
+  folderPath?: string | null;
+  script?: string;
+  autostart?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -18,6 +21,9 @@ export interface CriarProjetoDTO {
   icon?: string | null;
   port: number;
   active: boolean;
+  folderPath?: string | null;
+  script?: string;
+  autostart?: boolean;
 }
 
 export type AtualizarProjetoDTO = Partial<CriarProjetoDTO>;

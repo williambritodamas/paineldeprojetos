@@ -45,6 +45,9 @@ export interface CriarProjetoDTO {
   icon?: string | null;
   port: number;
   active: boolean;
+  folderPath?: string | null;
+  script?: string;
+  autostart?: boolean;
 }
 
 // Dados utilizados para atualizar um projeto.

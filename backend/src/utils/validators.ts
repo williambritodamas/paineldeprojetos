@@ -123,8 +123,12 @@ export function validarProjeto(dados: {
   icon?: unknown;
   port?: unknown;
   active?: unknown;
+  folderPath?: unknown;
+  script?: unknown;
+  autostart?: unknown;
 }): string | null {
-  const { name, description, icon, port, active } = dados;
+  const { name, description, icon, port, active, folderPath, script, autostart } =
+    dados;
 
   if (name !== undefined) {
     if (typeof name !== "string" || name.trim().length === 0) {
@@ -153,6 +157,22 @@ export function validarProjeto(dados: {
 
   if (active !== undefined && typeof active !== "boolean") {
     return "O campo ativo deve ser verdadeiro ou falso.";
+  }
+
+  if (folderPath !== undefined && folderPath !== null) {
+    if (typeof folderPath !== "string") {
+      return "O caminho da pasta deve ser um texto.";
+    }
+  }
+
+  if (script !== undefined && script !== null) {
+    if (typeof script !== "string" || script.trim().length === 0) {
+      return "O comando de execução deve ser um texto.";
+    }
+  }
+
+  if (autostart !== undefined && typeof autostart !== "boolean") {
+    return "O campo de inicialização automática deve ser verdadeiro ou falso.";
   }
 
   return null;

@@ -5,6 +5,7 @@ import type { CriarProjetoDTO, Project } from "../types";
 
 interface Props {
   projeto?: Project;
+  isAdmin: boolean;
   aoSalvar: (dados: CriarProjetoDTO) => Promise<void>;
   aoCancelar: () => void;
   salvando: boolean;
@@ -12,6 +13,7 @@ interface Props {
 
 export default function ProjectForm({
   projeto,
+  isAdmin,
   aoSalvar,
   aoCancelar,
   salvando,
@@ -21,6 +23,10 @@ export default function ProjectForm({
   const [icone, setIcone] = useState(projeto?.icon ?? "");
   const [porta, setPorta] = useState(projeto?.port.toString() ?? "");
   const [ativo, setAtivo] = useState(projeto?.active ?? true);
+  const [caminhoPasta, setCaminhoPasta] = useState(
+    projeto?.folderPath ?? ""
+  );
+  const [comando, setComando] = useState(projeto?.script ?? "npm start");
 
   async function aoEnviar(e: FormEvent) {
     e.preventDefault();
@@ -33,6 +39,12 @@ export default function ProjectForm({
       icon: icone.trim(),
       port: portaNum,
       active: ativo,
+      ...(isAdmin
+        ? {
+            folderPath: caminhoPasta.trim(),
+            script: comando.trim() || "npm start",
+          }
+        : {}),
     });
   }
 
@@ -99,6 +111,55 @@ export default function ProjectForm({
           />
         </div>
       </div>
+
+      {isAdmin && (
+        <>
+          <div>
+            <label htmlFor="caminhoPasta" className="campo-label">
+              Caminho da pasta no servidor
+            </label>
+            <input
+              id="caminhoPasta"
+              type="text"
+              value={caminhoPasta}
+              onChange={(e) => setCaminhoPasta(e.target.value)}
+              placeholder="Ex.: /home/usuario/apps/plataforma-videos"
+              className="campo-input"
+            />
+            <p className="mt-1 text-xs text-slate-500">
+              Pasta onde o projeto será executado via PM2 (apenas admin).
+            </p>
+          </div>
+
+          <div>
+            <label htmlFor="comando" className="campo-label">
+              Comando de execução
+            </label>
+            <input
+              id="comando"
+              type="text"
+              value={comando}
+              onChange={(e) => setComando(e.target.value)}
+              placeholder="Ex.: npm start"
+              className="campo-input"
+            />
+            <p className="mt-1 text-xs text-slate-500">
+              Ex.:{" "}
+              <code className="rounded bg-base-800 px-1.5 py-0.5 text-slate-400">
+                npm start
+              </code>
+              ,{" "}
+              <code className="rounded bg-base-800 px-1.5 py-0.5 text-slate-400">
+                npm run dev
+              </code>
+              ,{" "}
+              <code className="rounded bg-base-800 px-1.5 py-0.5 text-slate-400">
+                node server.js
+              </code>
+            </p>
+          </div>
+        </>
+      )}
 
       <div>
         <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-slate-300">

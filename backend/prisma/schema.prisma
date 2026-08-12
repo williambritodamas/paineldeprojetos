@@ -30,6 +30,12 @@ model Project {
   icon        String?
   port        Int
   active      Boolean  @default(true)
+  // Caminho da pasta no servidor (usado para gerenciar via PM2).
+  folderPath  String?
+  // Comando executado pelo PM2 na pasta do projeto (ex.: "npm start").
+  script      String   @default("npm start")
+  // Se o projeto deve ser registrado no PM2 para iniciar no boot.
+  autostart   Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

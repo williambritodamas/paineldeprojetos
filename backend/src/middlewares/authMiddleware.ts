@@ -1,9 +1,12 @@
 // Middleware de autenticação.
 // Protege as rotas administrativas exigindo um token JWT válido.
+// O papel do usuário é consultado no banco a cada requisição,
+// garantindo que mudanças de papel valham imediatamente e que
+// tokens antigos (sem o campo role) continuem funcionando.
 
 import type { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import { config } from "../config";
+import { config, prisma } from "../config";
 import { erroHttp } from "../utils/helpers";
 
 export interface RequisicaoAutenticada extends Request {
@@ -13,11 +16,11 @@ export interface RequisicaoAutenticada extends Request {
 }
 
 // Verifica o token de autorização no cabeçalho e libera a requisição.
-export function authMiddleware(
+export async function authMiddleware(
   req: RequisicaoAutenticada,
   res: Response,
   next: NextFunction
-): void {
+): Promise<void> {
   const cabecalho = req.headers.authorization;
 
   if (!cabecalho || !cabecalho.startsWith("Bearer ")) {
@@ -39,9 +42,17 @@ export function authMiddleware(
       return;
     }
 
-    req.userId = payload.sub;
-    req.username = payload.username;
-    req.userRole = payload.role === "admin" ? "admin" : "user";
+    // Autoridade: consulta o papel atual no banco (não confia no token).
+    const usuario = await prisma.user.findUnique({ where: { id: payload.sub } });
+
+    if (!usuario) {
+      erroHttp(res, 401, "Usuário não encontrado.");
+      return;
+    }
+
+    req.userId = usuario.id;
+    req.username = usuario.username;
+    req.userRole = usuario.role === "admin" ? "admin" : "user";
     next();
   } catch {
     erroHttp(res, 401, "Sessão expirada ou inválida.");
