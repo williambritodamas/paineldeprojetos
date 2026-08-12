@@ -10,6 +10,7 @@ import {
   Power,
   RotateCcw,
   Square,
+  Tag,
   Terminal,
   Trash2,
 } from "lucide-react";
@@ -110,6 +111,7 @@ export default function AdminProjectCard({
     !!project.pm2Status &&
     project.pm2Status !== "nao_registrado" &&
     project.pm2Status !== "indisponivel";
+  const nomeProcesso = project.pm2Name?.trim() || `proj-${project.id}`;
 
   return (
     <article className="card-padrao space-y-4 p-5">
@@ -211,6 +213,11 @@ export default function AdminProjectCard({
                 Uptime {formatarUptime(project.pm2UptimeMs)}
               </span>
             )}
+
+            <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
+              <Tag className="h-3.5 w-3.5" />
+              {nomeProcesso}
+            </span>
 
             <button
               type="button"
