@@ -52,3 +52,28 @@ export async function updateProject(
 export async function deleteProject(id: number): Promise<void> {
   await api.delete(`/projects/${id}`);
 }
+
+// POST /api/admin/pm2/:id/enable
+export async function habilitarAutostart(id: number): Promise<void> {
+  await api.post(`/admin/pm2/${id}/enable`);
+}
+
+// POST /api/admin/pm2/:id/disable
+export async function desabilitarAutostart(id: number): Promise<void> {
+  await api.post(`/admin/pm2/${id}/disable`);
+}
+
+// POST /api/admin/pm2/:id/iniciar
+export async function iniciarProcessoPm2(id: number): Promise<void> {
+  await api.post(`/admin/pm2/${id}/iniciar`);
+}
+
+// POST /api/admin/pm2/:id/reiniciar
+export async function reiniciarProcessoPm2(id: number): Promise<void> {
+  await api.post(`/admin/pm2/${id}/reiniciar`);
+}
+
+// POST /api/admin/pm2/:id/parar
+export async function pararProcessoPm2(id: number): Promise<void> {
+  await api.post(`/admin/pm2/${id}/parar`);
+}

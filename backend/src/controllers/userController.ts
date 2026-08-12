@@ -4,8 +4,7 @@
 import type { Response } from "express";
 import type { RequisicaoAutenticada } from "../middlewares/authMiddleware";
 import * as userService from "../services/userService";
-import { ErroNegocio } from "../services/userService";
-import { erroHttp, lerCorpo, sucessoHttp } from "../utils/helpers";
+import { erroHttp, ErroNegocio, lerCorpo, sucessoHttp } from "../utils/helpers";
 import {
   validarAtualizarUsuario,
   validarCriarUsuario,

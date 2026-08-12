@@ -37,3 +37,13 @@ export function lerCorpo(req: Request): Record<string, unknown> {
   }
   return req.body;
 }
+
+// Erro de negócio com status HTTP próprio, tratado nos controllers.
+export class ErroNegocio extends Error {
+  status: number;
+
+  constructor(status: number, mensagem: string) {
+    super(mensagem);
+    this.status = status;
+  }
+}

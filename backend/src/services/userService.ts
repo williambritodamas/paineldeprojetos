@@ -4,17 +4,8 @@
 import bcrypt from "bcryptjs";
 import { prisma } from "../config";
 import type { AtualizarUsuarioDTO, CriarUsuarioDTO } from "../types";
+import { ErroNegocio } from "../utils/helpers";
 import type { UsuarioRetorno } from "../types/respostas";
-
-// Erro de negócio com status HTTP próprio para ser tratado no controller.
-export class ErroNegocio extends Error {
-  status: number;
-
-  constructor(status: number, mensagem: string) {
-    super(mensagem);
-    this.status = status;
-  }
-}
 
 function montarUsuarioRetorno(usuario: {
   id: number;

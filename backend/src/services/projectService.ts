@@ -102,10 +102,18 @@ export async function listarProjetosComFiltro(
   return projetos.map(montarProjetoRetornoAdmin);
 }
 
-// Retorna um projeto específico.
+// Retorna um projeto específico (público, sem dados de execução).
 export async function obterProjeto(id: number): Promise<ProjetoRetorno | null> {
   const projeto = await prisma.project.findUnique({ where: { id } });
   return projeto ? montarProjetoRetorno(projeto) : null;
+}
+
+// Retorna um projeto específico com os dados administrativos (PM2).
+export async function obterProjetoAdmin(
+  id: number
+): Promise<ProjetoRetornoAdmin | null> {
+  const projeto = await prisma.project.findUnique({ where: { id } });
+  return projeto ? montarProjetoRetornoAdmin(projeto) : null;
 }
 
 // Cria um novo projeto.

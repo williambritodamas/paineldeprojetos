@@ -11,6 +11,16 @@ export interface Project {
   folderPath?: string | null;
   script?: string;
   autostart?: boolean;
+  pm2Status?:
+    | "online"
+    | "parado"
+    | "erro"
+    | "iniciando"
+    | "desconhecido"
+    | "nao_registrado"
+    | "indisponivel";
+  pm2Reinicios?: number;
+  pm2UptimeMs?: number | null;
   createdAt: string;
   updatedAt: string;
 }

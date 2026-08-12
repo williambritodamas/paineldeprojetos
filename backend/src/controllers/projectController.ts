@@ -4,6 +4,7 @@
 import type { Response } from "express";
 import type { RequisicaoAutenticada } from "../middlewares/authMiddleware";
 import * as projectService from "../services/projectService";
+import * as pm2Service from "../services/pm2Service";
 import { erroHttp, lerCorpo, sucessoHttp } from "../utils/helpers";
 import { validarProjeto } from "../utils/validators";
 
@@ -18,6 +19,7 @@ export async function listar(req: RequisicaoAutenticada, res: Response): Promise
 }
 
 // GET /api/admin/projects — administrativo: permite busca e filtro.
+// Inclui o status atual de cada projeto no PM2.
 export async function listarAdministrativo(
   req: RequisicaoAutenticada,
   res: Response
@@ -34,7 +36,39 @@ export async function listarAdministrativo(
       status: statusParam,
     });
 
-    sucessoHttp(res, projetos);
+    // Status do PM2 é opcional: se o daemon estiver indisponível,
+    // os projetos são retornados normalmente sem o detalhe.
+    let statusPorProcesso: Map<string, import("../services/pm2Service").StatusProcesso> =
+      new Map();
+    let pm2Disponivel = false;
+    try {
+      statusPorProcesso = await pm2Service.listarStatusPorProcesso();
+      pm2Disponivel = true;
+    } catch {
+      // PM2 indisponível no momento.
+    }
+
+    const resultado = projetos.map((projeto) => {
+      if (!pm2Disponivel) {
+        return {
+          ...projeto,
+          pm2Status: "indisponivel",
+          pm2Reinicios: 0,
+          pm2UptimeMs: null,
+        };
+      }
+
+      const processo = statusPorProcesso.get(`proj-${projeto.id}`);
+
+      return {
+        ...projeto,
+        pm2Status: processo ? processo.status : "nao_registrado",
+        pm2Reinicios: processo?.reinicios ?? 0,
+        pm2UptimeMs: processo?.uptimeMs ?? null,
+      };
+    });
+
+    sucessoHttp(res, resultado);
   } catch {
     erroHttp(res, 500, "Erro ao listar projetos.");
   }

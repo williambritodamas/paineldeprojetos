@@ -37,6 +37,11 @@ export default function AdminPage() {
   const [excluindo, setExcluindo] = useState<Project | undefined>(undefined);
   const [removendo, setRemovendo] = useState(false);
 
+  // Ação PM2 em andamento (uma por vez), com o id do projeto afetado.
+  const [acaoPm2, setAcaoPm2] = useState<{ id: number; tipo: string } | null>(
+    null
+  );
+
   // Estatísticas calculadas a partir dos projetos carregados.
   const stats = useMemo(() => {
     const total = projetos.length;
@@ -105,6 +110,54 @@ export default function AdminPage() {
       setRemovendo(false);
     }
   }
+
+  async function executarAcaoPm2(
+    projeto: Project,
+    tipo: "enable" | "disable" | "iniciar" | "reiniciar" | "parar"
+  ) {
+    if (acaoPm2) {
+      return;
+    }
+
+    setAcaoPm2({ id: projeto.id, tipo });
+
+    try {
+      switch (tipo) {
+        case "enable":
+          await projectService.habilitarAutostart(projeto.id);
+          break;
+        case "disable":
+          await projectService.desabilitarAutostart(projeto.id);
+          break;
+        case "iniciar":
+          await projectService.iniciarProcessoPm2(projeto.id);
+          break;
+        case "reiniciar":
+          await projectService.reiniciarProcessoPm2(projeto.id);
+          break;
+        case "parar":
+          await projectService.pararProcessoPm2(projeto.id);
+          break;
+      }
+      await recarregar();
+    } catch (erroAcao) {
+      const detalhe = (
+        erroAcao as {
+          response?: { data?: { error?: string } };
+        }
+      )?.response?.data?.error;
+      alert(detalhe || "Erro ao executar a ação no PM2.");
+    } finally {
+      setAcaoPm2(null);
+    }
+  }
+
+  const aoAlternarAutostart = (projeto: Project) =>
+    executarAcaoPm2(projeto, projeto.autostart ? "disable" : "enable");
+  const aoIniciar = (projeto: Project) => executarAcaoPm2(projeto, "iniciar");
+  const aoReiniciar = (projeto: Project) =>
+    executarAcaoPm2(projeto, "reiniciar");
+  const aoParar = (projeto: Project) => executarAcaoPm2(projeto, "parar");
 
   function sair() {
     logout();
@@ -207,9 +260,14 @@ export default function AdminPage() {
                 key={projeto.id}
                 project={projeto}
                 isAdmin={isAdmin}
+                pm2Ocupado={acaoPm2?.id === projeto.id}
                 aoEditar={abrirEdicao}
                 aoExcluir={(p) => setExcluindo(p)}
                 aoAlternar={aoAlternarStatus}
+                aoAlternarAutostart={aoAlternarAutostart}
+                aoIniciar={aoIniciar}
+                aoReiniciar={aoReiniciar}
+                aoParar={aoParar}
               />
             ))}
           </section>
