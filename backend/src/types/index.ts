@@ -38,6 +38,16 @@ export interface LoginDTO {
   password: string;
 }
 
+// Dados utilizados para criar um processo adicional do projeto.
+export interface CriarProcessoDTO {
+  // Presente apenas na edição, para sincronizar processos existentes.
+  id?: number;
+  label: string;
+  folderPath: string;
+  script?: string;
+  port: number;
+}
+
 // Dados utilizados para criar um projeto.
 export interface CriarProjetoDTO {
   name: string;
@@ -49,6 +59,7 @@ export interface CriarProjetoDTO {
   script?: string;
   autostart?: boolean;
   pm2Name?: string | null;
+  processes?: CriarProcessoDTO[];
 }
 
 // Dados utilizados para atualizar um projeto.
