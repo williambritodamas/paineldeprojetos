@@ -1,6 +1,26 @@
 // Tipos compartilhados do frontend.
 // Evitam o uso de `any` e garantem consistência com a API.
 
+export interface ProjectProcess {
+  id: number;
+  origem: "principal" | "extra";
+  label: string;
+  port: number;
+  folderPath: string;
+  script: string;
+  pm2Name: string;
+  pm2Status?:
+    | "online"
+    | "parado"
+    | "erro"
+    | "iniciando"
+    | "desconhecido"
+    | "nao_registrado"
+    | "indisponivel";
+  pm2Reinicios?: number;
+  pm2UptimeMs?: number | null;
+}
+
 export interface Project {
   id: number;
   name: string;
@@ -22,8 +42,17 @@ export interface Project {
     | "indisponivel";
   pm2Reinicios?: number;
   pm2UptimeMs?: number | null;
+  processes?: ProjectProcess[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CriarProcessoDTO {
+  id?: number;
+  label: string;
+  folderPath: string;
+  script?: string;
+  port: number;
 }
 
 export interface CriarProjetoDTO {
@@ -36,6 +65,7 @@ export interface CriarProjetoDTO {
   script?: string;
   autostart?: boolean;
   pm2Name?: string | null;
+  processes?: CriarProcessoDTO[];
 }
 
 export type AtualizarProjetoDTO = Partial<CriarProjetoDTO>;
