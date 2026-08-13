@@ -7,6 +7,61 @@ import * as projectService from "../services/projectService";
 import * as pm2Service from "../services/pm2Service";
 import { erroHttp, lerCorpo, sucessoHttp } from "../utils/helpers";
 import { validarProjeto } from "../utils/validators";
+import type { StatusProcesso } from "../services/pm2Service";
+import type { StatusPm2 } from "../types/respostas";
+
+// Monta o status PM2 de um processo a partir do mapa de status.
+function montarStatusProcesso(
+  statusPorProcesso: Map<string, StatusProcesso>,
+  pm2Disponivel: boolean,
+  nomeProcessoPm2: string
+): {
+  pm2Status: StatusPm2;
+  pm2Reinicios: number;
+  pm2UptimeMs: number | null;
+} {
+  if (!pm2Disponivel) {
+    return { pm2Status: "indisponivel", pm2Reinicios: 0, pm2UptimeMs: null };
+  }
+
+  const processo = statusPorProcesso.get(nomeProcessoPm2);
+
+  return {
+    pm2Status: processo ? processo.status : "nao_registrado",
+    pm2Reinicios: processo?.reinicios ?? 0,
+    pm2UptimeMs: processo?.uptimeMs ?? null,
+  };
+}
+
+// Sanitiza a lista de processos adicionais vindos do corpo da requisição.
+function sanitizarProcessos(
+  processos: unknown,
+  ehAdmin: boolean
+): Array<{
+  id?: number;
+  label: string;
+  folderPath: string;
+  script?: string;
+  port: number;
+}> | undefined {
+  if (!ehAdmin || !Array.isArray(processos)) {
+    return undefined;
+  }
+
+  return processos.map((processo) => {
+    const corpo = processo as Record<string, unknown>;
+    return {
+      id: typeof corpo.id === "number" ? corpo.id : undefined,
+      label: String(corpo.label),
+      folderPath: String(corpo.folderPath),
+      script:
+        corpo.script !== undefined && corpo.script !== null
+          ? String(corpo.script)
+          : undefined,
+      port: Number(corpo.port),
+    };
+  });
+}
 
 // GET /api/projects — público: exibe apenas projetos ativos.
 export async function listar(req: RequisicaoAutenticada, res: Response): Promise<void> {
@@ -38,8 +93,7 @@ export async function listarAdministrativo(
 
     // Status do PM2 é opcional: se o daemon estiver indisponível,
     // os projetos são retornados normalmente sem o detalhe.
-    let statusPorProcesso: Map<string, import("../services/pm2Service").StatusProcesso> =
-      new Map();
+    let statusPorProcesso: Map<string, StatusProcesso> = new Map();
     let pm2Disponivel = false;
     try {
       statusPorProcesso = await pm2Service.listarStatusPorProcesso();
@@ -49,27 +103,28 @@ export async function listarAdministrativo(
     }
 
     const resultado = projetos.map((projeto) => {
-      if (!pm2Disponivel) {
-        return {
-          ...projeto,
-          pm2Status: "indisponivel",
-          pm2Reinicios: 0,
-          pm2UptimeMs: null,
-        };
-      }
-
-      const processo = statusPorProcesso.get(
+      const principal = montarStatusProcesso(
+        statusPorProcesso,
+        pm2Disponivel,
         pm2Service.nomeProcesso({
           id: projeto.id,
           pm2Name: projeto.pm2Name,
         })
       );
 
+      const processes = projeto.processes.map((processo) => ({
+        ...processo,
+        ...montarStatusProcesso(
+          statusPorProcesso,
+          pm2Disponivel,
+          processo.pm2Name
+        ),
+      }));
+
       return {
         ...projeto,
-        pm2Status: processo ? processo.status : "nao_registrado",
-        pm2Reinicios: processo?.reinicios ?? 0,
-        pm2UptimeMs: processo?.uptimeMs ?? null,
+        ...principal,
+        processes,
       };
     });
 
@@ -118,6 +173,7 @@ export async function criar(req: RequisicaoAutenticada, res: Response): Promise<
     script: ehAdmin ? corpo.script : undefined,
     autostart: ehAdmin ? corpo.autostart : undefined,
     pm2Name: ehAdmin ? corpo.pm2Name : undefined,
+    processes: ehAdmin ? corpo.processes : undefined,
   });
 
   if (erro) {
@@ -154,6 +210,7 @@ export async function criar(req: RequisicaoAutenticada, res: Response): Promise<
           : ehAdmin && corpo.pm2Name === null
             ? null
             : undefined,
+      processes: sanitizarProcessos(corpo.processes, ehAdmin),
     });
 
     sucessoHttp(res, projeto);
@@ -185,6 +242,7 @@ export async function atualizar(req: RequisicaoAutenticada, res: Response): Prom
     script: ehAdmin ? corpo.script : undefined,
     autostart: ehAdmin ? corpo.autostart : undefined,
     pm2Name: ehAdmin ? corpo.pm2Name : undefined,
+    processes: ehAdmin ? corpo.processes : undefined,
   });
 
   if (erro) {
@@ -229,6 +287,7 @@ export async function atualizar(req: RequisicaoAutenticada, res: Response): Prom
           : ehAdmin && corpo.pm2Name === null
             ? null
             : undefined,
+      processes: sanitizarProcessos(corpo.processes, ehAdmin),
     });
 
     if (!projeto) {
