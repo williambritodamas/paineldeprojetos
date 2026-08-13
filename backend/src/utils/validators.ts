@@ -127,8 +127,9 @@ export function validarProjeto(dados: {
   script?: unknown;
   autostart?: unknown;
   pm2Name?: unknown;
+  processes?: unknown;
 }): string | null {
-  const { name, description, icon, port, active, folderPath, script, autostart, pm2Name } =
+  const { name, description, icon, port, active, folderPath, script, autostart, pm2Name, processes } =
     dados;
 
   if (name !== undefined) {
@@ -182,6 +183,66 @@ export function validarProjeto(dados: {
     }
     if (pm2Name.trim().length === 0) {
       return "O nome do processo PM2 deve ser um texto.";
+    }
+  }
+
+  if (processes !== undefined) {
+    const erroProcessos = validarProcessos(processes);
+    if (erroProcessos) {
+      return erroProcessos;
+    }
+  }
+
+  return null;
+}
+
+// Valida a lista de processos adicionais do projeto.
+export function validarProcessos(processos: unknown): string | null {
+  if (!Array.isArray(processos)) {
+    return "Os processos adicionais devem ser uma lista.";
+  }
+
+  const rotulosVistos = new Set<string>();
+
+  for (const processo of processos) {
+    if (typeof processo !== "object" || processo === null) {
+      return "Cada processo adicional deve ser um objeto.";
+    }
+
+    const corpo = processo as Record<string, unknown>;
+
+    if (
+      corpo.id !== undefined &&
+      (typeof corpo.id !== "number" || !Number.isInteger(corpo.id))
+    ) {
+      return "O identificador de um processo adicional é inválido.";
+    }
+
+    if (typeof corpo.label !== "string" || corpo.label.trim().length === 0) {
+      return "Informe o nome de cada processo adicional.";
+    }
+
+    const rotulo = corpo.label.trim();
+    if (rotulosVistos.has(rotulo.toLowerCase())) {
+      return "Os processos adicionais precisam ter nomes diferentes.";
+    }
+    rotulosVistos.add(rotulo.toLowerCase());
+
+    if (typeof corpo.folderPath !== "string" || corpo.folderPath.trim().length === 0) {
+      return `Informe o caminho da pasta do processo "${rotulo}".`;
+    }
+
+    if (
+      corpo.script !== undefined &&
+      corpo.script !== null &&
+      (typeof corpo.script !== "string" || corpo.script.trim().length === 0)
+    ) {
+      return `O comando de execução do processo "${rotulo}" deve ser um texto.`;
+    }
+
+    const erroPorta = validarPorta(corpo.port);
+    if (erroPorta) {
+      return `Porta do processo "${rotulo}": ${erroPorta}`;
     }
   }
 
