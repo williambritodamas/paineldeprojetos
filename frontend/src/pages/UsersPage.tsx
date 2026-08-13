@@ -3,7 +3,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Pencil, Plus, Trash2, Users } from "lucide-react";
+import { ArrowLeft, LogOut, Pencil, Plus, Trash2, Users } from "lucide-react";
 import Header from "../components/Header";
 import Loading from "../components/Loading";
 import EmptyState from "../components/EmptyState";
@@ -11,7 +11,7 @@ import ConfirmDialog from "../components/ConfirmDialog";
 import ProjectModal from "../components/ProjectModal";
 import { useAuth } from "../hooks/AuthContext";
 import * as userService from "../services/userService";
-import type { CriarUsuarioDTO, User } from "../types";
+import type { AtualizarUsuarioDTO, User } from "../types";
 
 export default function UsersPage() {
   const { user, logout } = useAuth();
@@ -64,14 +64,19 @@ export default function UsersPage() {
     setModalAberto(true);
   }, []);
 
-  async function aoSalvar(dados: CriarUsuarioDTO) {
+  async function aoSalvar(dados: AtualizarUsuarioDTO) {
     setSalvando(true);
 
     try {
       if (usuarioEditando) {
         await userService.updateUser(usuarioEditando.id, dados);
       } else {
-        await userService.createUser(dados);
+        await userService.createUser({
+          name: dados.name ?? "",
+          username: dados.username ?? "",
+          role: dados.role ?? "user",
+          password: dados.password ?? "",
+        });
       }
       setModalAberto(false);
       await carregarUsuarios();
@@ -112,6 +117,14 @@ export default function UsersPage() {
         subtitulo={user ? `Olá, ${user.name}` : undefined}
         acoes={
           <>
+            <button
+              type="button"
+              onClick={() => navigate("/admin")}
+              className="botao-secundario"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Voltar
+            </button>
             <button type="button" onClick={abrirNovo} className="botao-primario">
               <Plus className="h-4 w-4" />
               Novo Usuário
@@ -229,7 +242,7 @@ export default function UsersPage() {
 // Formulário de cadastro/edição de usuário.
 interface UserFormProps {
   usuario?: User;
-  aoSalvar: (dados: CriarUsuarioDTO) => Promise<void>;
+  aoSalvar: (dados: AtualizarUsuarioDTO) => Promise<void>;
   aoCancelar: () => void;
   salvando: boolean;
 }
@@ -250,12 +263,16 @@ function UserForm({
   async function aoEnviar(e: FormEvent) {
     e.preventDefault();
 
-    const dados: CriarUsuarioDTO = {
+    const dados: AtualizarUsuarioDTO = {
       name: nome.trim(),
       username: username.trim(),
       role: papel,
-      password: senha,
     };
+
+    // Na edição, senha vazia mantém a senha atual (o campo não é enviado).
+    if (senha) {
+      dados.password = senha;
+    }
 
     await aoSalvar(dados);
   }
