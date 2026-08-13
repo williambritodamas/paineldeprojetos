@@ -346,7 +346,7 @@ Alguns projetos rodam em mais de um processo (ex.: frontend na porta 3002 e back
 Regras:
 
 - o processo **principal** continua sendo o responsável pelo link público do projeto;
-- o nome de cada processo extra no PM2 é `proj-<id>-<nome-do-processo>` (ex.: `proj-3-sigpat-backend`);
+- o nome de cada processo extra no PM2 é o **rótulo** informado no cadastro (ex.: `sigpat-back`); ele deve ser único entre todos os projetos, pois nomes repetidos colidem no PM2;
 - cada processo adicional tem status e ações **Iniciar**, **Reiniciar** e **Parar** próprios no card administrativo;
 - habilitar/desabilitar **Início automático** registra ou remove **todos** os processos do projeto no PM2;
 - renomear um processo adicional exige re-registrá-lo (desabilitar e habilitar o início automático).

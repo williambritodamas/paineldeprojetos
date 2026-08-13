@@ -280,7 +280,7 @@ export default function ProjectForm({
 
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <div>
-                        <label className="campo-label">Nome</label>
+                        <label className="campo-label">Nome (processo PM2)</label>
                         <input
                           type="text"
                           required
@@ -288,7 +288,7 @@ export default function ProjectForm({
                           onChange={(e) =>
                             atualizarProcesso(indice, "label", e.target.value)
                           }
-                          placeholder="Ex.: Backend"
+                          placeholder="Ex.: sigpat-back"
                           className="campo-input"
                         />
                       </div>
