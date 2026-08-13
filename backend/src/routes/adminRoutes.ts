@@ -26,4 +26,24 @@ router.post("/pm2/:id/iniciar", authMiddleware, adminMiddleware, pm2Controller.i
 router.post("/pm2/:id/reiniciar", authMiddleware, adminMiddleware, pm2Controller.reiniciar);
 router.post("/pm2/:id/parar", authMiddleware, adminMiddleware, pm2Controller.parar);
 
+// Operações PM2 sobre processos adicionais: somente administradores.
+router.post(
+  "/pm2/processos/:processId/iniciar",
+  authMiddleware,
+  adminMiddleware,
+  pm2Controller.iniciarProcessoExtra
+);
+router.post(
+  "/pm2/processos/:processId/reiniciar",
+  authMiddleware,
+  adminMiddleware,
+  pm2Controller.reiniciarProcessoExtra
+);
+router.post(
+  "/pm2/processos/:processId/parar",
+  authMiddleware,
+  adminMiddleware,
+  pm2Controller.pararProcessoExtra
+);
+
 export default router;
