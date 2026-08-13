@@ -54,7 +54,7 @@ async function obterProcessoExtraOuErro(
     return null;
   }
 
-  return pm2Service.montarUnidadeExtra(processo.projectId, processo);
+  return pm2Service.montarUnidadeExtra(processo);
 }
 
 // Trata erros de negócio e demais erros na resposta.

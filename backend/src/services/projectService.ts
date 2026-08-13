@@ -66,7 +66,7 @@ function montarProjetoRetornoAdmin(projeto: {
       port: processo.port,
       folderPath: processo.folderPath,
       script: processo.script,
-      pm2Name: pm2Service.nomeProcessoExtra(projeto.id, processo.label),
+      pm2Name: pm2Service.nomeProcessoExtra(processo.label),
     })),
   };
 }
