@@ -14,7 +14,7 @@ import {
   Terminal,
   Trash2,
 } from "lucide-react";
-import type { Project } from "../types";
+import type { Project, ProjectProcess } from "../types";
 import { gerarUrlProjeto } from "../utils/projectUrl";
 import StatusBadge from "./StatusBadge";
 
@@ -29,6 +29,9 @@ interface Props {
   aoIniciar: (projeto: Project) => void;
   aoReiniciar: (projeto: Project) => void;
   aoParar: (projeto: Project) => void;
+  aoIniciarProcesso: (projeto: Project, processo: ProjectProcess) => void;
+  aoReiniciarProcesso: (projeto: Project, processo: ProjectProcess) => void;
+  aoPararProcesso: (projeto: Project, processo: ProjectProcess) => void;
 }
 
 function infoStatus(status?: Project["pm2Status"]): {
@@ -103,6 +106,9 @@ export default function AdminProjectCard({
   aoIniciar,
   aoReiniciar,
   aoParar,
+  aoIniciarProcesso,
+  aoReiniciarProcesso,
+  aoPararProcesso,
 }: Props) {
   const urlProjeto = gerarUrlProjeto(project.port);
   const status = infoStatus(project.pm2Status);
@@ -200,6 +206,10 @@ export default function AdminProjectCard({
 
       {isAdmin && (
         <div className="rounded-xl border border-base-600 bg-base-800/40 p-3">
+          <span className="mb-2 inline-block text-xs font-medium uppercase tracking-wide text-slate-500">
+            Processo principal
+          </span>
+
           <div className="flex flex-wrap items-center gap-3">
             <span
               className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${status.classe}`}
@@ -281,6 +291,91 @@ export default function AdminProjectCard({
               Parar
             </button>
           </div>
+
+          {(project.processes?.length ?? 0) > 0 && (
+            <div className="mt-4 space-y-3 border-t border-base-600 pt-3">
+              <span className="inline-block text-xs font-medium uppercase tracking-wide text-slate-500">
+                Processos adicionais
+              </span>
+
+              {project.processes?.map((processo) => {
+                const statusInfo = infoStatus(processo.pm2Status);
+                const processoOnline = processo.pm2Status === "online";
+                const processoRegistrado =
+                  !!processo.pm2Status &&
+                  processo.pm2Status !== "nao_registrado" &&
+                  processo.pm2Status !== "indisponivel";
+
+                return (
+                  <div
+                    key={processo.id}
+                    className="rounded-lg border border-base-600 bg-base-700/40 p-3"
+                  >
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-slate-200">
+                          {processo.label}
+                        </p>
+                        <p className="truncate text-xs text-slate-500">
+                          Porta: {processo.port} · {processo.folderPath}
+                        </p>
+                      </div>
+
+                      <span
+                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${statusInfo.classe}`}
+                      >
+                        <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                        {pm2Ocupado ? "Aplicando..." : statusInfo.texto}
+                      </span>
+
+                      {processoOnline && processo.pm2UptimeMs !== null && (
+                        <span className="text-xs text-slate-400">
+                          Uptime {formatarUptime(processo.pm2UptimeMs)}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                      {!processoOnline && (
+                        <button
+                          type="button"
+                          disabled={pm2Ocupado}
+                          onClick={() => aoIniciarProcesso(project, processo)}
+                          title="Iniciar processo"
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-base-600 bg-base-700 px-2.5 py-1.5 text-xs text-slate-300 transition hover:border-emerald-500/50 hover:text-emerald-400 disabled:opacity-50"
+                        >
+                          <Play className="h-3.5 w-3.5" />
+                          Iniciar
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        disabled={pm2Ocupado || !processoRegistrado}
+                        onClick={() => aoReiniciarProcesso(project, processo)}
+                        title="Reiniciar processo"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-base-600 bg-base-700 px-2.5 py-1.5 text-xs text-slate-300 transition hover:border-sky-500/50 hover:text-sky-400 disabled:opacity-40"
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" />
+                        Reiniciar
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={pm2Ocupado || !processoOnline}
+                        onClick={() => aoPararProcesso(project, processo)}
+                        title="Parar processo"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-base-600 bg-base-700 px-2.5 py-1.5 text-xs text-slate-300 transition hover:border-red-500/50 hover:text-red-400 disabled:opacity-40"
+                      >
+                        <Square className="h-3.5 w-3.5" />
+                        Parar
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
     </article>
