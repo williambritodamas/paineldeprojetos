@@ -23,6 +23,8 @@ model User {
 
 // Projeto que roda em uma porta específica.
 // O host (localhost/IP/hostname) é montado dinamicamente no frontend.
+// Os campos de execução (folderPath/script/autostart/pm2Name) referem-se ao
+// processo principal; processos adicionais ficam em ProjectProcess.
 model Project {
   id          Int      @id @default(autoincrement())
   name        String
@@ -38,6 +40,27 @@ model Project {
   autostart   Boolean  @default(false)
   // Nome opcional do processo no PM2. Se vazio, usa "proj-<id>".
   pm2Name     String?
+  // Processos adicionais executados junto com o projeto (ex.: backend).
+  processes   ProjectProcess[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+// Processo adicional de um projeto.
+// Cada processo roda numa pasta e porta próprias e é gerenciado pelo PM2
+// junto com o processo principal do projeto.
+model ProjectProcess {
+  id         Int      @id @default(autoincrement())
+  projectId  Int
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  // Nome descritivo do processo (ex.: "Frontend", "Backend").
+  label      String
+  // Caminho da pasta no servidor onde o processo é executado.
+  folderPath String
+  // Comando executado pelo PM2 na pasta do processo (ex.: "npm start").
+  script     String   @default("npm start")
+  // Porta em que o processo roda.
+  port       Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
