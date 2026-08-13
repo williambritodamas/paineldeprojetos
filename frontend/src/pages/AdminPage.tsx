@@ -16,7 +16,7 @@ import EmptyState from "../components/EmptyState";
 import { useAuth } from "../hooks/AuthContext";
 import { useAdminProjects } from "../hooks/useAdminProjects";
 import * as projectService from "../services/projectService";
-import type { CriarProjetoDTO, Project } from "../types";
+import type { CriarProjetoDTO, Project, ProjectProcess } from "../types";
 
 type StatusFiltro = "todos" | "ativos" | "inativos";
 
@@ -152,12 +152,54 @@ export default function AdminPage() {
     }
   }
 
+  async function executarAcaoProcesso(
+    projeto: Project,
+    processo: ProjectProcess,
+    tipo: "iniciar" | "reiniciar" | "parar"
+  ) {
+    if (acaoPm2) {
+      return;
+    }
+
+    setAcaoPm2({ id: projeto.id, tipo });
+
+    try {
+      switch (tipo) {
+        case "iniciar":
+          await projectService.iniciarProcessoExtra(processo.id);
+          break;
+        case "reiniciar":
+          await projectService.reiniciarProcessoExtra(processo.id);
+          break;
+        case "parar":
+          await projectService.pararProcessoExtra(processo.id);
+          break;
+      }
+      await recarregar();
+    } catch (erroAcao) {
+      const detalhe = (
+        erroAcao as {
+          response?: { data?: { error?: string } };
+        }
+      )?.response?.data?.error;
+      alert(detalhe || "Erro ao executar a ação no PM2.");
+    } finally {
+      setAcaoPm2(null);
+    }
+  }
+
   const aoAlternarAutostart = (projeto: Project) =>
     executarAcaoPm2(projeto, projeto.autostart ? "disable" : "enable");
   const aoIniciar = (projeto: Project) => executarAcaoPm2(projeto, "iniciar");
   const aoReiniciar = (projeto: Project) =>
     executarAcaoPm2(projeto, "reiniciar");
   const aoParar = (projeto: Project) => executarAcaoPm2(projeto, "parar");
+  const aoIniciarProcesso = (projeto: Project, processo: ProjectProcess) =>
+    executarAcaoProcesso(projeto, processo, "iniciar");
+  const aoReiniciarProcesso = (projeto: Project, processo: ProjectProcess) =>
+    executarAcaoProcesso(projeto, processo, "reiniciar");
+  const aoPararProcesso = (projeto: Project, processo: ProjectProcess) =>
+    executarAcaoProcesso(projeto, processo, "parar");
 
   function sair() {
     logout();
@@ -268,6 +310,9 @@ export default function AdminPage() {
                 aoIniciar={aoIniciar}
                 aoReiniciar={aoReiniciar}
                 aoParar={aoParar}
+                aoIniciarProcesso={aoIniciarProcesso}
+                aoReiniciarProcesso={aoReiniciarProcesso}
+                aoPararProcesso={aoPararProcesso}
               />
             ))}
           </section>
