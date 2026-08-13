@@ -82,10 +82,11 @@ function slugificar(texto: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-// Nome de um processo adicional no PM2: "proj-<id>-<slug(nome)>".
-export function nomeProcessoExtra(projetoId: number, label: string): string {
+// Nome de um processo adicional no PM2: usa o rótulo informado (ex.: "sigpat-back").
+// O rótulo deve ser único entre os projetos, pois nomes repetidos colidem no PM2.
+export function nomeProcessoExtra(label: string): string {
   const slug = slugificar(label);
-  return `proj-${projetoId}-${slug || "processo"}`;
+  return slug || "processo";
 }
 
 // Monta a unidade do processo principal do projeto.
@@ -103,12 +104,13 @@ export function montarUnidadePrincipal(projeto: {
 }
 
 // Monta a unidade de um processo adicional do projeto.
-export function montarUnidadeExtra(
-  projetoId: number,
-  processo: { label: string; folderPath: string; script: string }
-): UnidadeProcesso {
+export function montarUnidadeExtra(processo: {
+  label: string;
+  folderPath: string;
+  script: string;
+}): UnidadeProcesso {
   return {
-    processName: nomeProcessoExtra(projetoId, processo.label),
+    processName: nomeProcessoExtra(processo.label),
     folderPath: processo.folderPath,
     script: processo.script,
   };
@@ -131,7 +133,7 @@ export function montarUnidadesProjeto(
   const unidades = [montarUnidadePrincipal(projeto)];
 
   for (const processo of processosExtras) {
-    unidades.push(montarUnidadeExtra(projeto.id, processo));
+    unidades.push(montarUnidadeExtra(processo));
   }
 
   return unidades;
