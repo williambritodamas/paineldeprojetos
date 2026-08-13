@@ -43,12 +43,22 @@ function montarProjetoRetornoAdmin(projeto: {
   script: string;
   autostart: boolean;
   pm2Name: string | null;
+  env: string | null;
+  autorestart: boolean;
+  restartDelay: number;
+  maxRestarts: number;
+  maxMemoryRestart: string | null;
   processes: Array<{
     id: number;
     label: string;
     folderPath: string;
     script: string;
     port: number;
+    env: string | null;
+    autorestart: boolean;
+    restartDelay: number;
+    maxRestarts: number;
+    maxMemoryRestart: string | null;
   }>;
   createdAt: Date;
   updatedAt: Date;
@@ -59,6 +69,11 @@ function montarProjetoRetornoAdmin(projeto: {
     script: projeto.script,
     autostart: projeto.autostart,
     pm2Name: projeto.pm2Name,
+    env: projeto.env,
+    autorestart: projeto.autorestart,
+    restartDelay: projeto.restartDelay,
+    maxRestarts: projeto.maxRestarts,
+    maxMemoryRestart: projeto.maxMemoryRestart,
     processes: projeto.processes.map((processo) => ({
       id: processo.id,
       origem: "extra",
@@ -66,6 +81,11 @@ function montarProjetoRetornoAdmin(projeto: {
       port: processo.port,
       folderPath: processo.folderPath,
       script: processo.script,
+      env: processo.env,
+      autorestart: processo.autorestart,
+      restartDelay: processo.restartDelay,
+      maxRestarts: processo.maxRestarts,
+      maxMemoryRestart: processo.maxMemoryRestart,
       pm2Name: pm2Service.nomeProcessoExtra(processo.label),
     })),
   };
@@ -162,12 +182,22 @@ export async function criarProjeto(
       script: dados.script?.trim() || "npm start",
       autostart: dados.autostart ?? false,
       pm2Name: dados.pm2Name?.trim() || null,
+      env: dados.env?.trim() || null,
+      autorestart: dados.autorestart ?? true,
+      restartDelay: dados.restartDelay ?? 1000,
+      maxRestarts: dados.maxRestarts ?? 10,
+      maxMemoryRestart: dados.maxMemoryRestart?.trim() || null,
       processes: {
         create: (dados.processes ?? []).map((processo) => ({
           label: processo.label.trim(),
           folderPath: processo.folderPath.trim(),
           script: processo.script?.trim() || "npm start",
           port: processo.port,
+          env: processo.env?.trim() || null,
+          autorestart: processo.autorestart ?? true,
+          restartDelay: processo.restartDelay ?? 1000,
+          maxRestarts: processo.maxRestarts ?? 10,
+          maxMemoryRestart: processo.maxMemoryRestart?.trim() || null,
         })),
       },
     },
@@ -198,6 +228,11 @@ export async function atualizarProjeto(
     script?: string;
     autostart?: boolean;
     pm2Name?: string | null;
+    env?: string | null;
+    autorestart?: boolean;
+    restartDelay?: number;
+    maxRestarts?: number;
+    maxMemoryRestart?: string | null;
     processes?: {
       deleteMany: {};
       create: Array<{
@@ -205,6 +240,11 @@ export async function atualizarProjeto(
         folderPath: string;
         script: string;
         port: number;
+        env: string | null;
+        autorestart: boolean;
+        restartDelay: number;
+        maxRestarts: number;
+        maxMemoryRestart: string | null;
       }>;
     };
   } = {};
@@ -236,6 +276,21 @@ export async function atualizarProjeto(
   if (dados.pm2Name !== undefined) {
     dadosAtualizados.pm2Name = dados.pm2Name?.trim() || null;
   }
+  if (dados.env !== undefined) {
+    dadosAtualizados.env = dados.env?.trim() || null;
+  }
+  if (dados.autorestart !== undefined) {
+    dadosAtualizados.autorestart = dados.autorestart;
+  }
+  if (dados.restartDelay !== undefined) {
+    dadosAtualizados.restartDelay = dados.restartDelay;
+  }
+  if (dados.maxRestarts !== undefined) {
+    dadosAtualizados.maxRestarts = dados.maxRestarts;
+  }
+  if (dados.maxMemoryRestart !== undefined) {
+    dadosAtualizados.maxMemoryRestart = dados.maxMemoryRestart?.trim() || null;
+  }
   if (dados.processes !== undefined) {
     // Sincroniza os processos adicionais: remove os atuais e recria os
     // informados. Os nomes no PM2 derivam do rótulo, portanto não mudam
@@ -247,6 +302,11 @@ export async function atualizarProjeto(
         folderPath: processo.folderPath.trim(),
         script: processo.script?.trim() || "npm start",
         port: processo.port,
+        env: processo.env?.trim() || null,
+        autorestart: processo.autorestart ?? true,
+        restartDelay: processo.restartDelay ?? 1000,
+        maxRestarts: processo.maxRestarts ?? 10,
+        maxMemoryRestart: processo.maxMemoryRestart?.trim() || null,
       })),
     };
   }

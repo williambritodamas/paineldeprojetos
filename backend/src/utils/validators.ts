@@ -114,6 +114,48 @@ export function validarPorta(porta: unknown): string | null {
   return null;
 }
 
+// Valida as variáveis de ambiente no formato "CHAVE=valor" por linha.
+export function validarEnv(env: unknown): string | null {
+  if (env === undefined || env === null) {
+    return null;
+  }
+  if (typeof env !== "string") {
+    return "As variáveis de ambiente devem ser um texto.";
+  }
+
+  const linhas = env.split(/\r?\n/);
+  for (const linha of linhas) {
+    const texto = linha.trim();
+    if (texto.length === 0 || texto.startsWith("#")) {
+      continue;
+    }
+    const indiceIgual = texto.indexOf("=");
+    if (indiceIgual <= 0) {
+      return `Variável de ambiente inválida: "${texto}". Use o formato CHAVE=valor.`;
+    }
+  }
+  return null;
+}
+
+// Valida um valor inteiro não negativo (para atraso/máximo de reinícios).
+function validarInteiroNaoNegativo(valor: unknown, nome: string): string | null {
+  if (typeof valor !== "number" || !Number.isInteger(valor) || valor < 0) {
+    return `O campo ${nome} deve ser um número inteiro maior ou igual a zero.`;
+  }
+  return null;
+}
+
+// Valida o limite de memória (opcional, ex.: "512M", "1G").
+function validarMemoria(memoria: unknown): string | null {
+  if (memoria === undefined || memoria === null) {
+    return null;
+  }
+  if (typeof memoria !== "string" || memoria.trim().length === 0) {
+    return "O limite de memória deve ser um texto (ex.: 512M).";
+  }
+  return null;
+}
+
 // Valida os dados de criação/atualização de um projeto.
 export function validarProjeto(dados: {
   name?: unknown;
@@ -126,9 +168,29 @@ export function validarProjeto(dados: {
   autostart?: unknown;
   pm2Name?: unknown;
   processes?: unknown;
+  env?: unknown;
+  autorestart?: unknown;
+  restartDelay?: unknown;
+  maxRestarts?: unknown;
+  maxMemoryRestart?: unknown;
 }): string | null {
-  const { name, description, icon, port, active, folderPath, script, autostart, pm2Name, processes } =
-    dados;
+  const {
+    name,
+    description,
+    icon,
+    port,
+    active,
+    folderPath,
+    script,
+    autostart,
+    pm2Name,
+    processes,
+    env,
+    autorestart,
+    restartDelay,
+    maxRestarts,
+    maxMemoryRestart,
+  } = dados;
 
   if (name !== undefined) {
     if (typeof name !== "string" || name.trim().length === 0) {
@@ -191,6 +253,30 @@ export function validarProjeto(dados: {
     }
   }
 
+  const erroEnv = validarEnv(env);
+  if (erroEnv) {
+    return erroEnv;
+  }
+
+  if (autorestart !== undefined && typeof autorestart !== "boolean") {
+    return "O campo de reinício automático deve ser verdadeiro ou falso.";
+  }
+
+  const erroAtraso = validarInteiroNaoNegativo(restartDelay, "de atraso de reinício");
+  if (erroAtraso) {
+    return erroAtraso;
+  }
+
+  const erroMaxReinicios = validarInteiroNaoNegativo(maxRestarts, "de máximo de reinícios");
+  if (erroMaxReinicios) {
+    return erroMaxReinicios;
+  }
+
+  const erroMemoria = validarMemoria(maxMemoryRestart);
+  if (erroMemoria) {
+    return erroMemoria;
+  }
+
   return null;
 }
 
@@ -241,6 +327,36 @@ export function validarProcessos(processos: unknown): string | null {
     const erroPorta = validarPorta(corpo.port);
     if (erroPorta) {
       return `Porta do processo "${rotulo}": ${erroPorta}`;
+    }
+
+    const erroEnv = validarEnv(corpo.env);
+    if (erroEnv) {
+      return `Processo "${rotulo}": ${erroEnv}`;
+    }
+
+    if (corpo.autorestart !== undefined && typeof corpo.autorestart !== "boolean") {
+      return `Processo "${rotulo}": o campo de reinício automático deve ser verdadeiro ou falso.`;
+    }
+
+    const erroAtraso = validarInteiroNaoNegativo(
+      corpo.restartDelay,
+      "de atraso de reinício"
+    );
+    if (erroAtraso) {
+      return `Processo "${rotulo}": ${erroAtraso}`;
+    }
+
+    const erroMaxReinicios = validarInteiroNaoNegativo(
+      corpo.maxRestarts,
+      "de máximo de reinícios"
+    );
+    if (erroMaxReinicios) {
+      return `Processo "${rotulo}": ${erroMaxReinicios}`;
+    }
+
+    const erroMemoria = validarMemoria(corpo.maxMemoryRestart);
+    if (erroMemoria) {
+      return `Processo "${rotulo}": ${erroMemoria}`;
     }
   }
 

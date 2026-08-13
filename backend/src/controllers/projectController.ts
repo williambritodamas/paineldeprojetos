@@ -43,6 +43,11 @@ function sanitizarProcessos(
   folderPath: string;
   script?: string;
   port: number;
+  env?: string | null;
+  autorestart?: boolean;
+  restartDelay?: number;
+  maxRestarts?: number;
+  maxMemoryRestart?: string | null;
 }> | undefined {
   if (!ehAdmin || !Array.isArray(processos)) {
     return undefined;
@@ -59,6 +64,24 @@ function sanitizarProcessos(
           ? String(corpo.script)
           : undefined,
       port: Number(corpo.port),
+      env:
+        typeof corpo.env === "string"
+          ? corpo.env
+          : corpo.env === null
+            ? null
+            : undefined,
+      autorestart:
+        typeof corpo.autorestart === "boolean" ? corpo.autorestart : undefined,
+      restartDelay:
+        typeof corpo.restartDelay === "number" ? corpo.restartDelay : undefined,
+      maxRestarts:
+        typeof corpo.maxRestarts === "number" ? corpo.maxRestarts : undefined,
+      maxMemoryRestart:
+        typeof corpo.maxMemoryRestart === "string"
+          ? corpo.maxMemoryRestart
+          : corpo.maxMemoryRestart === null
+            ? null
+            : undefined,
     };
   });
 }
@@ -174,6 +197,11 @@ export async function criar(req: RequisicaoAutenticada, res: Response): Promise<
     autostart: ehAdmin ? corpo.autostart : undefined,
     pm2Name: ehAdmin ? corpo.pm2Name : undefined,
     processes: ehAdmin ? corpo.processes : undefined,
+    env: ehAdmin ? corpo.env : undefined,
+    autorestart: ehAdmin ? corpo.autorestart : undefined,
+    restartDelay: ehAdmin ? corpo.restartDelay : undefined,
+    maxRestarts: ehAdmin ? corpo.maxRestarts : undefined,
+    maxMemoryRestart: ehAdmin ? corpo.maxMemoryRestart : undefined,
   });
 
   if (erro) {
@@ -211,6 +239,30 @@ export async function criar(req: RequisicaoAutenticada, res: Response): Promise<
             ? null
             : undefined,
       processes: sanitizarProcessos(corpo.processes, ehAdmin),
+      env:
+        ehAdmin && typeof corpo.env === "string"
+          ? corpo.env
+          : ehAdmin && corpo.env === null
+            ? null
+            : undefined,
+      autorestart:
+        ehAdmin && typeof corpo.autorestart === "boolean"
+          ? corpo.autorestart
+          : undefined,
+      restartDelay:
+        ehAdmin && typeof corpo.restartDelay === "number"
+          ? corpo.restartDelay
+          : undefined,
+      maxRestarts:
+        ehAdmin && typeof corpo.maxRestarts === "number"
+          ? corpo.maxRestarts
+          : undefined,
+      maxMemoryRestart:
+        ehAdmin && typeof corpo.maxMemoryRestart === "string"
+          ? corpo.maxMemoryRestart
+          : ehAdmin && corpo.maxMemoryRestart === null
+            ? null
+            : undefined,
     });
 
     sucessoHttp(res, projeto);
@@ -243,6 +295,11 @@ export async function atualizar(req: RequisicaoAutenticada, res: Response): Prom
     autostart: ehAdmin ? corpo.autostart : undefined,
     pm2Name: ehAdmin ? corpo.pm2Name : undefined,
     processes: ehAdmin ? corpo.processes : undefined,
+    env: ehAdmin ? corpo.env : undefined,
+    autorestart: ehAdmin ? corpo.autorestart : undefined,
+    restartDelay: ehAdmin ? corpo.restartDelay : undefined,
+    maxRestarts: ehAdmin ? corpo.maxRestarts : undefined,
+    maxMemoryRestart: ehAdmin ? corpo.maxMemoryRestart : undefined,
   });
 
   if (erro) {
@@ -288,6 +345,30 @@ export async function atualizar(req: RequisicaoAutenticada, res: Response): Prom
             ? null
             : undefined,
       processes: sanitizarProcessos(corpo.processes, ehAdmin),
+      env:
+        ehAdmin && typeof corpo.env === "string"
+          ? corpo.env
+          : ehAdmin && corpo.env === null
+            ? null
+            : undefined,
+      autorestart:
+        ehAdmin && typeof corpo.autorestart === "boolean"
+          ? corpo.autorestart
+          : undefined,
+      restartDelay:
+        ehAdmin && typeof corpo.restartDelay === "number"
+          ? corpo.restartDelay
+          : undefined,
+      maxRestarts:
+        ehAdmin && typeof corpo.maxRestarts === "number"
+          ? corpo.maxRestarts
+          : undefined,
+      maxMemoryRestart:
+        ehAdmin && typeof corpo.maxMemoryRestart === "string"
+          ? corpo.maxMemoryRestart
+          : ehAdmin && corpo.maxMemoryRestart === null
+            ? null
+            : undefined,
     });
 
     if (!projeto) {

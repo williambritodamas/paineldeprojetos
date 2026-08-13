@@ -8,6 +8,11 @@ export interface ProjectProcess {
   port: number;
   folderPath: string;
   script: string;
+  env?: string | null;
+  autorestart?: boolean;
+  restartDelay?: number;
+  maxRestarts?: number;
+  maxMemoryRestart?: string | null;
   pm2Name: string;
   pm2Status?:
     | "online"
@@ -32,6 +37,11 @@ export interface Project {
   script?: string;
   autostart?: boolean;
   pm2Name?: string | null;
+  env?: string | null;
+  autorestart?: boolean;
+  restartDelay?: number;
+  maxRestarts?: number;
+  maxMemoryRestart?: string | null;
   pm2Status?:
     | "online"
     | "parado"
@@ -53,6 +63,11 @@ export interface CriarProcessoDTO {
   folderPath: string;
   script?: string;
   port: number;
+  env?: string | null;
+  autorestart?: boolean;
+  restartDelay?: number;
+  maxRestarts?: number;
+  maxMemoryRestart?: string | null;
 }
 
 export interface CriarProjetoDTO {
@@ -65,6 +80,11 @@ export interface CriarProjetoDTO {
   script?: string;
   autostart?: boolean;
   pm2Name?: string | null;
+  env?: string | null;
+  autorestart?: boolean;
+  restartDelay?: number;
+  maxRestarts?: number;
+  maxMemoryRestart?: string | null;
   processes?: CriarProcessoDTO[];
 }
 

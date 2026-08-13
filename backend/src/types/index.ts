@@ -46,6 +46,16 @@ export interface CriarProcessoDTO {
   folderPath: string;
   script?: string;
   port: number;
+  // Variáveis de ambiente do processo (CHAVE=valor por linha).
+  env?: string | null;
+  // Reinicia o processo automaticamente se ele cair.
+  autorestart?: boolean;
+  // Atraso em ms entre reinícios automáticos.
+  restartDelay?: number;
+  // Limite de reinícios antes de marcar o processo como "errored".
+  maxRestarts?: number;
+  // Limite de memória que dispara reinício quando estourado (ex.: "512M").
+  maxMemoryRestart?: string | null;
 }
 
 // Dados utilizados para criar um projeto.
@@ -60,6 +70,16 @@ export interface CriarProjetoDTO {
   autostart?: boolean;
   pm2Name?: string | null;
   processes?: CriarProcessoDTO[];
+  // Variáveis de ambiente do processo principal (CHAVE=valor por linha).
+  env?: string | null;
+  // Reinicia o processo automaticamente se ele cair.
+  autorestart?: boolean;
+  // Atraso em ms entre reinícios automáticos.
+  restartDelay?: number;
+  // Limite de reinícios antes de marcar o processo como "errored".
+  maxRestarts?: number;
+  // Limite de memória que dispara reinício quando estourado (ex.: "512M").
+  maxMemoryRestart?: string | null;
 }
 
 // Dados utilizados para atualizar um projeto.

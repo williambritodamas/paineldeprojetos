@@ -21,6 +21,19 @@ export interface UnidadeProcesso {
   processName: string;
   folderPath: string | null;
   script: string;
+  // Porta em que o processo roda. Injetada como variável "PORT" (a menos
+  // que o usuário a defina manualmente no env, que tem prioridade).
+  port?: number | null;
+  // Variáveis de ambiente em texto "CHAVE=valor" por linha.
+  env?: string | null;
+  // Reinicia o processo automaticamente se ele cair.
+  autorestart?: boolean;
+  // Atraso em ms entre reinícios automáticos.
+  restartDelay?: number;
+  // Limite de reinícios antes de marcar o processo como "errored".
+  maxRestarts?: number;
+  // Limite de memória que dispara reinício quando estourado (ex.: "512M").
+  maxMemoryRestart?: string | null;
 }
 
 // Status simplificado de um processo do PM2.
@@ -95,11 +108,23 @@ export function montarUnidadePrincipal(projeto: {
   folderPath: string | null;
   script: string;
   pm2Name?: string | null;
+  port?: number;
+  env?: string | null;
+  autorestart?: boolean;
+  restartDelay?: number;
+  maxRestarts?: number;
+  maxMemoryRestart?: string | null;
 }): UnidadeProcesso {
   return {
     processName: nomeProcesso(projeto),
     folderPath: projeto.folderPath,
     script: projeto.script,
+    port: projeto.port,
+    env: projeto.env,
+    autorestart: projeto.autorestart,
+    restartDelay: projeto.restartDelay,
+    maxRestarts: projeto.maxRestarts,
+    maxMemoryRestart: projeto.maxMemoryRestart,
   };
 }
 
@@ -108,11 +133,23 @@ export function montarUnidadeExtra(processo: {
   label: string;
   folderPath: string;
   script: string;
+  port?: number;
+  env?: string | null;
+  autorestart?: boolean;
+  restartDelay?: number;
+  maxRestarts?: number;
+  maxMemoryRestart?: string | null;
 }): UnidadeProcesso {
   return {
     processName: nomeProcessoExtra(processo.label),
     folderPath: processo.folderPath,
     script: processo.script,
+    port: processo.port,
+    env: processo.env,
+    autorestart: processo.autorestart,
+    restartDelay: processo.restartDelay,
+    maxRestarts: processo.maxRestarts,
+    maxMemoryRestart: processo.maxMemoryRestart,
   };
 }
 
@@ -123,11 +160,23 @@ export function montarUnidadesProjeto(
     folderPath: string | null;
     script: string;
     pm2Name?: string | null;
+    port?: number;
+    env?: string | null;
+    autorestart?: boolean;
+    restartDelay?: number;
+    maxRestarts?: number;
+    maxMemoryRestart?: string | null;
   },
   processosExtras: Array<{
     label: string;
     folderPath: string;
     script: string;
+    port?: number;
+    env?: string | null;
+    autorestart?: boolean;
+    restartDelay?: number;
+    maxRestarts?: number;
+    maxMemoryRestart?: string | null;
   }>
 ): UnidadeProcesso[] {
   const unidades = [montarUnidadePrincipal(projeto)];
@@ -334,6 +383,53 @@ function parsearComando(comando: string): { script: string; args: string[] } {
   return { script: partes[0], args: partes.slice(1) };
 }
 
+// Transforma o texto "CHAVE=valor" (uma por linha) em um objeto de ambiente.
+function parsearEnv(texto: string | null | undefined): Record<string, string> {
+  const ambiente: Record<string, string> = {};
+
+  if (!texto) {
+    return ambiente;
+  }
+
+  for (const linha of texto.split(/\r?\n/)) {
+    const limpa = linha.trim();
+    if (limpa.length === 0 || limpa.startsWith("#")) {
+      continue;
+    }
+
+    const indiceIgual = limpa.indexOf("=");
+    if (indiceIgual <= 0) {
+      continue;
+    }
+
+    const chave = limpa.slice(0, indiceIgual).trim();
+    const valor = limpa.slice(indiceIgual + 1).trim();
+
+    if (chave.length > 0) {
+      ambiente[chave] = valor;
+    }
+  }
+
+  return ambiente;
+}
+
+// Monta as variáveis de ambiente do processo no PM2.
+// A porta é injetada como "PORT", a menos que o usuário a defina no env
+// manual (a definição manual tem prioridade).
+function montarAmbiente(unidade: UnidadeProcesso): Record<string, string> {
+  const ambiente = parsearEnv(unidade.env);
+
+  if (
+    typeof unidade.port === "number" &&
+    !Number.isNaN(unidade.port) &&
+    ambiente.PORT === undefined
+  ) {
+    ambiente.PORT = String(unidade.port);
+  }
+
+  return ambiente;
+}
+
 // Exige que a unidade tenha a pasta configurada.
 function validarUnidade(unidade: UnidadeProcesso): void {
   if (!unidade.folderPath || unidade.folderPath.trim().length === 0) {
@@ -349,13 +445,34 @@ function montarConfigUnidade(unidade: UnidadeProcesso): object {
   validarUnidade(unidade);
   const { script, args } = parsearComando(unidade.script);
 
-  return {
+  const ambiente = montarAmbiente(unidade);
+  const config: Record<string, unknown> = {
     name: unidade.processName,
     script,
     args,
     cwd: unidade.folderPath!.trim(),
     exec_mode: "fork",
   };
+
+  // Variáveis de ambiente: injeta "PORT" e as definidas no cadastro.
+  // O PM2 mescla essas variáveis com as do ambiente do daemon.
+  if (Object.keys(ambiente).length > 0) {
+    config.env = ambiente;
+  }
+
+  // Opções de reinício automático.
+  config.autorestart = unidade.autorestart ?? true;
+  config.restart_delay = unidade.restartDelay ?? 1000;
+  config.max_restarts = unidade.maxRestarts ?? 10;
+  config.time = true;
+
+  // Limite de memória que dispara reinício quando estourado (ex.: "512M").
+  const memoria = unidade.maxMemoryRestart?.trim();
+  if (memoria && memoria.length > 0) {
+    config.max_memory_restart = memoria;
+  }
+
+  return config;
 }
 
 // Localiza uma unidade na lista de processos do PM2.

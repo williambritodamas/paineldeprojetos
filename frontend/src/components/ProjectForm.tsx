@@ -18,6 +18,11 @@ interface LinhaProcessoExtra {
   folderPath: string;
   script: string;
   port: string;
+  env: string;
+  autorestart: boolean;
+  restartDelay: string;
+  maxRestarts: string;
+  maxMemoryRestart: string;
 }
 
 export default function ProjectForm({
@@ -39,6 +44,19 @@ export default function ProjectForm({
   const [nomeProcesso, setNomeProcesso] = useState(
     projeto?.pm2Name ?? ""
   );
+  const [env, setEnv] = useState(projeto?.env ?? "");
+  const [autorestart, setAutorestart] = useState(
+    projeto?.autorestart ?? true
+  );
+  const [restartDelay, setRestartDelay] = useState(
+    String(projeto?.restartDelay ?? 1000)
+  );
+  const [maxRestarts, setMaxRestarts] = useState(
+    String(projeto?.maxRestarts ?? 10)
+  );
+  const [maxMemoryRestart, setMaxMemoryRestart] = useState(
+    projeto?.maxMemoryRestart ?? ""
+  );
   const [temProcessosExtras, setTemProcessosExtras] = useState(
     (projeto?.processes?.length ?? 0) > 0
   );
@@ -49,13 +67,28 @@ export default function ProjectForm({
       folderPath: processo.folderPath,
       script: processo.script,
       port: String(processo.port),
+      env: processo.env ?? "",
+      autorestart: processo.autorestart ?? true,
+      restartDelay: String(processo.restartDelay ?? 1000),
+      maxRestarts: String(processo.maxRestarts ?? 10),
+      maxMemoryRestart: processo.maxMemoryRestart ?? "",
     })) ?? []
   );
 
   function adicionarProcesso() {
     setProcessosExtras((atual) => [
       ...atual,
-      { label: "", folderPath: "", script: "npm start", port: "" },
+      {
+        label: "",
+        folderPath: "",
+        script: "npm start",
+        port: "",
+        env: "",
+        autorestart: true,
+        restartDelay: "1000",
+        maxRestarts: "10",
+        maxMemoryRestart: "",
+      },
     ]);
   }
 
@@ -66,7 +99,7 @@ export default function ProjectForm({
   function atualizarProcesso(
     indice: number,
     campo: keyof LinhaProcessoExtra,
-    valor: string
+    valor: string | boolean
   ) {
     setProcessosExtras((atual) =>
       atual.map((processo, i) =>
@@ -91,6 +124,11 @@ export default function ProjectForm({
             folderPath: caminhoPasta.trim(),
             script: comando.trim() || "npm start",
             pm2Name: nomeProcesso.trim() || null,
+            env: env.trim() || null,
+            autorestart,
+            restartDelay: Number(restartDelay),
+            maxRestarts: Number(maxRestarts),
+            maxMemoryRestart: maxMemoryRestart.trim() || null,
             processes: temProcessosExtras
               ? processosExtras.map((processo) => ({
                   id: processo.id,
@@ -98,6 +136,12 @@ export default function ProjectForm({
                   folderPath: processo.folderPath.trim(),
                   script: processo.script.trim() || "npm start",
                   port: Number(processo.port),
+                  env: processo.env.trim() || null,
+                  autorestart: processo.autorestart,
+                  restartDelay: Number(processo.restartDelay),
+                  maxRestarts: Number(processo.maxRestarts),
+                  maxMemoryRestart:
+                    processo.maxMemoryRestart.trim() || null,
                 }))
               : [],
           }
@@ -238,6 +282,94 @@ export default function ProjectForm({
           </div>
 
           <div className="rounded-xl border border-base-600 bg-base-800/40 p-4">
+            <span className="text-sm font-medium text-slate-300">
+              Execução via PM2
+            </span>
+            <p className="mt-1 text-xs text-slate-500">
+              Opções usadas ao iniciar o processo principal no PM2. A porta é
+              injetada automaticamente como{" "}
+              <code className="rounded bg-base-800 px-1.5 py-0.5 text-slate-400">
+                PORT
+              </code>{" "}
+              (a menos que você a defina nas variáveis abaixo).
+            </p>
+
+            <div className="mt-3">
+              <label htmlFor="env" className="campo-label">
+                Variáveis de ambiente
+              </label>
+              <textarea
+                id="env"
+                rows={3}
+                value={env}
+                onChange={(e) => setEnv(e.target.value)}
+                placeholder={"DATABASE_URL=postgresql://...\nJWT_SECRET=minha-chave"}
+                className="campo-input resize-none font-mono text-xs"
+              />
+              <p className="mt-1 text-xs text-slate-500">
+                Uma variável por linha, no formato{" "}
+                <code className="rounded bg-base-800 px-1.5 py-0.5 text-slate-400">
+                  CHAVE=valor
+                </code>
+                . Linhas iniciadas com # são ignoradas.
+              </p>
+            </div>
+
+            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <label htmlFor="restartDelay" className="campo-label">
+                  Atraso entre reinícios (ms)
+                </label>
+                <input
+                  id="restartDelay"
+                  type="number"
+                  min={0}
+                  value={restartDelay}
+                  onChange={(e) => setRestartDelay(e.target.value)}
+                  className="campo-input"
+                />
+              </div>
+              <div>
+                <label htmlFor="maxRestarts" className="campo-label">
+                  Máximo de reinícios
+                </label>
+                <input
+                  id="maxRestarts"
+                  type="number"
+                  min={0}
+                  value={maxRestarts}
+                  onChange={(e) => setMaxRestarts(e.target.value)}
+                  className="campo-input"
+                />
+              </div>
+              <div>
+                <label htmlFor="maxMemoryRestart" className="campo-label">
+                  Limite de memória
+                </label>
+                <input
+                  id="maxMemoryRestart"
+                  type="text"
+                  value={maxMemoryRestart}
+                  onChange={(e) => setMaxMemoryRestart(e.target.value)}
+                  placeholder="Ex.: 512M"
+                  className="campo-input"
+                />
+              </div>
+              <div className="flex items-end">
+                <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={autorestart}
+                    onChange={(e) => setAutorestart(e.target.checked)}
+                    className="h-4 w-4 accent-sky-500"
+                  />
+                  Reiniciar automaticamente
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-base-600 bg-base-800/40 p-4">
             <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-slate-300">
               <input
                 type="checkbox"
@@ -339,6 +471,102 @@ export default function ProjectForm({
                           placeholder="Ex.: npm start"
                           className="campo-input"
                         />
+                      </div>
+                    </div>
+
+                    <div className="mt-3">
+                      <label className="campo-label">
+                        Variáveis de ambiente
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={processo.env}
+                        onChange={(e) =>
+                          atualizarProcesso(indice, "env", e.target.value)
+                        }
+                        placeholder={"DATABASE_URL=postgresql://...\nJWT_SECRET=minha-chave"}
+                        className="campo-input resize-none font-mono text-xs"
+                      />
+                      <p className="mt-1 text-xs text-slate-500">
+                        Uma variável por linha, no formato{" "}
+                        <code className="rounded bg-base-800 px-1.5 py-0.5 text-slate-400">
+                          CHAVE=valor
+                        </code>
+                        .
+                      </p>
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="campo-label">
+                          Atraso entre reinícios (ms)
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={processo.restartDelay}
+                          onChange={(e) =>
+                            atualizarProcesso(
+                              indice,
+                              "restartDelay",
+                              e.target.value
+                            )
+                          }
+                          className="campo-input"
+                        />
+                      </div>
+                      <div>
+                        <label className="campo-label">
+                          Máximo de reinícios
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={processo.maxRestarts}
+                          onChange={(e) =>
+                            atualizarProcesso(
+                              indice,
+                              "maxRestarts",
+                              e.target.value
+                            )
+                          }
+                          className="campo-input"
+                        />
+                      </div>
+                      <div>
+                        <label className="campo-label">
+                          Limite de memória
+                        </label>
+                        <input
+                          type="text"
+                          value={processo.maxMemoryRestart}
+                          onChange={(e) =>
+                            atualizarProcesso(
+                              indice,
+                              "maxMemoryRestart",
+                              e.target.value
+                            )
+                          }
+                          placeholder="Ex.: 512M"
+                          className="campo-input"
+                        />
+                      </div>
+                      <div className="flex items-end">
+                        <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-slate-300">
+                          <input
+                            type="checkbox"
+                            checked={processo.autorestart}
+                            onChange={(e) =>
+                              atualizarProcesso(
+                                indice,
+                                "autorestart",
+                                e.target.checked
+                              )
+                            }
+                            className="h-4 w-4 accent-sky-500"
+                          />
+                          Reiniciar automaticamente
+                        </label>
                       </div>
                     </div>
                   </div>

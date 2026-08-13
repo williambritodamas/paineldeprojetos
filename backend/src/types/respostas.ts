@@ -30,6 +30,16 @@ export interface ProcessoRetorno {
   port: number;
   folderPath: string;
   script: string;
+  // Variáveis de ambiente do processo (CHAVE=valor por linha).
+  env: string | null;
+  // Reinicia o processo automaticamente se ele cair.
+  autorestart: boolean;
+  // Atraso em ms entre reinícios automáticos.
+  restartDelay: number;
+  // Limite de reinícios antes de marcar o processo como "errored".
+  maxRestarts: number;
+  // Limite de memória que dispara reinício quando estourado (ex.: "512M").
+  maxMemoryRestart: string | null;
   // Nome efetivo do processo no PM2.
   pm2Name: string;
   pm2Status?: StatusPm2;
@@ -43,6 +53,16 @@ export interface ProjetoRetornoAdmin extends ProjetoRetorno {
   script: string;
   autostart: boolean;
   pm2Name: string | null;
+  // Variáveis de ambiente do processo principal (CHAVE=valor por linha).
+  env: string | null;
+  // Reinicia o processo automaticamente se ele cair.
+  autorestart: boolean;
+  // Atraso em ms entre reinícios automáticos.
+  restartDelay: number;
+  // Limite de reinícios antes de marcar o processo como "errored".
+  maxRestarts: number;
+  // Limite de memória que dispara reinício quando estourado (ex.: "512M").
+  maxMemoryRestart: string | null;
   // Status atual do processo principal no PM2 (adicionado pela listagem admin).
   pm2Status?: StatusPm2;
   pm2Reinicios?: number;

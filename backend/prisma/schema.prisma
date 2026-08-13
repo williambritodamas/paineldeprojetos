@@ -40,6 +40,16 @@ model Project {
   autostart   Boolean  @default(false)
   // Nome opcional do processo no PM2. Se vazio, usa "proj-<id>".
   pm2Name     String?
+  // Variáveis de ambiente do processo principal (CHAVE=valor por linha).
+  env            String?
+  // Reinicia o processo automaticamente se ele cair.
+  autorestart    Boolean  @default(true)
+  // Atraso em ms entre reinícios automáticos.
+  restartDelay   Int      @default(1000)
+  // Limite de reinícios antes de marcar o processo como "errored".
+  maxRestarts    Int      @default(10)
+  // Limite de memória que dispara reinício quando estourado (ex.: "512M").
+  maxMemoryRestart String?
   // Processos adicionais executados junto com o projeto (ex.: backend).
   processes   ProjectProcess[]
   createdAt   DateTime @default(now())
@@ -61,6 +71,16 @@ model ProjectProcess {
   script     String   @default("npm start")
   // Porta em que o processo roda.
   port       Int
+  // Variáveis de ambiente do processo (CHAVE=valor por linha).
+  env            String?
+  // Reinicia o processo automaticamente se ele cair.
+  autorestart    Boolean  @default(true)
+  // Atraso em ms entre reinícios automáticos.
+  restartDelay   Int      @default(1000)
+  // Limite de reinícios antes de marcar o processo como "errored".
+  maxRestarts    Int      @default(10)
+  // Limite de memória que dispara reinício quando estourado (ex.: "512M").
+  maxMemoryRestart String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 }
