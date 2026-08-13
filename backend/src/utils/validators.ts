@@ -89,10 +89,8 @@ export function validarAtualizarUsuario(dados: {
   }
 
   if (password !== undefined) {
-    if (typeof password !== "string" || password.length === 0) {
-      return "A senha é obrigatória.";
-    }
-    if (password.length < 6) {
+    // Senha vazia na atualização significa manter a senha atual.
+    if (typeof password === "string" && password.length > 0 && password.length < 6) {
       return "A senha deve ter pelo menos 6 caracteres.";
     }
   }
