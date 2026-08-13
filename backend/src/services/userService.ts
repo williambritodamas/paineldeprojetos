@@ -102,7 +102,8 @@ export async function atualizarUsuario(
   if (dados.username !== undefined) {
     dadosAtualizados.username = dados.username.trim();
   }
-  if (dados.password !== undefined) {
+  // Senha vazia ou ausente mantém a senha atual.
+  if (dados.password !== undefined && dados.password.length > 0) {
     dadosAtualizados.password = await bcrypt.hash(dados.password, 10);
   }
   if (dados.role !== undefined) {
