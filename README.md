@@ -5,8 +5,9 @@ Painel administrativo para centralizar, acessar e gerenciar projetos e sistemas 
 A aplicação funciona como um **launchpad central**: a página pública visualiza os projetos disponíveis e permite acessar cada um em uma nova aba. Na área administrativa, além do cadastro de projetos, o **administrador** pode:
 
 - cadastrar/editar/excluir **usuários** do painel (com papéis admin ou usuário comum);
-- configurar o **caminho da pasta** e o **comando de execução** de cada projeto;
-- gerenciar os processos via **PM2** diretamente no painel: habilitar/desabilitar a inicialização automática no boot, iniciar, parar, reiniciar e ver o status de cada projeto.
+- configurar o **caminho da pasta**, o **comando de execução** e o **nome do processo no PM2** de cada projeto;
+- cadastrar **processos adicionais** por projeto (nome, pasta, porta e comando), para sistemas que rodam em mais de um processo;
+- gerenciar os processos via **PM2** diretamente no painel: habilitar/desabilitar a inicialização automática no boot, iniciar, parar, reiniciar e ver o status de cada processo.
 
 ---
 
@@ -300,8 +301,9 @@ Somente usuário autenticado:
 **Apenas administradores** (papel `admin`):
 
 - página `/admin/usuarios` para cadastrar, editar e excluir usuários do painel;
-- configurar o caminho da pasta e o comando de execução dos projetos;
-- gerenciar os processos via PM2 (inicialização automática, iniciar/parar/reiniciar e status).
+- configurar o caminho da pasta, o comando de execução e o nome do processo PM2 dos projetos;
+- cadastrar processos adicionais por projeto;
+- gerenciar os processos via PM2 (inicialização automática, iniciar/parar/reiniciar e status de cada processo).
 
 Usuários com papel `user` acessam `/admin` e gerenciam os projetos normalmente, mas não veem os campos PM2, a página de usuários nem executam operações no PM2.
 
@@ -330,7 +332,24 @@ O painel gerencia os processos dos projetos via PM2 usando a **pasta** e o **com
 
 > O `pm2 startup` (registro do serviço de boot do sistema) deve estar configurado de antemão, como normalmente é feito em servidores Linux. O painel apenas persiste a lista de processos com o `pm2 save`.
 
-O nome do processo no PM2 é estável (`proj-<id>`), então renomear o projeto no painel não quebra o gerenciamento. A pasta e o comando são usados apenas no momento de registrar o processo.
+O nome do processo no PM2 é estável (`proj-<id>`), então renomear o projeto no painel não quebra o gerenciamento. O administrador pode definir um nome próprio no campo **Nome do processo PM2** (ex.: `workshop`). A pasta e o comando são usados apenas no momento de registrar o processo.
+
+### Projetos com mais de um processo
+
+Alguns projetos rodam em mais de um processo (ex.: frontend na porta 3002 e backend na porta 3003). No formulário, marque **"Este projeto roda em mais de um processo?"** e cadastre cada processo adicional com:
+
+- **nome** (rótulo usado no nome do processo do PM2);
+- **pasta** no servidor;
+- **porta** (apenas informativa);
+- **comando** (default `npm start`).
+
+Regras:
+
+- o processo **principal** continua sendo o responsável pelo link público do projeto;
+- o nome de cada processo extra no PM2 é `proj-<id>-<nome-do-processo>` (ex.: `proj-3-sigpat-backend`);
+- cada processo adicional tem status e ações **Iniciar**, **Reiniciar** e **Parar** próprios no card administrativo;
+- habilitar/desabilitar **Início automático** registra ou remove **todos** os processos do projeto no PM2;
+- renomear um processo adicional exige re-registrá-lo (desabilitar e habilitar o início automático).
 
 ---
 
@@ -350,7 +369,9 @@ O nome do processo no PM2 é estável (`proj-<id>`), então renomear o projeto n
    Para administradores, também fica disponível no formulário:
 
    - caminho da pasta no servidor (ex.: `/home/usuario/apps/plataforma-videos`);
-   - comando de execução (ex.: `npm start`).
+   - comando de execução (ex.: `npm start`);
+   - nome do processo no PM2 (opcional, ex.: `workshop`);
+   - e, quando o projeto roda em mais de um processo, os dados de cada processo adicional (nome, pasta, porta e comando).
 
 Não é informada URL. O endereço é montado dinamicamente.
 
@@ -392,6 +413,9 @@ Regras de segurança:
 | POST   | `/api/admin/pm2/:id/iniciar`   | Admin   | Inicia o processo                |
 | POST   | `/api/admin/pm2/:id/reiniciar` | Admin   | Reinicia o processo              |
 | POST   | `/api/admin/pm2/:id/parar`     | Admin   | Para o processo                  |
+| POST   | `/api/admin/pm2/processos/:processId/iniciar`   | Admin | Inicia um processo adicional     |
+| POST   | `/api/admin/pm2/processos/:processId/reiniciar` | Admin | Reinicia um processo adicional   |
+| POST   | `/api/admin/pm2/processos/:processId/parar`     | Admin | Para um processo adicional       |
 
 ### Exemplo de health check
 
@@ -444,7 +468,7 @@ Authorization: Bearer SEU_TOKEN
 - o papel do usuário é consultado no banco a cada requisição, então mudanças de papel valem imediatamente;
 - middleware que protege as rotas administrativas;
 - validação de entrada nos controllers;
-- campos de execução (pasta, comando e autostart) são aceitos apenas para administradores;
+- campos de execução (pasta, comando, nome do processo PM2, autostart e processos adicionais) são aceitos apenas para administradores;
 - a API pública não expõe a pasta nem o comando dos projetos;
 - CORS configurado pela porta do frontend: aceita qualquer host
   (localhost, IP ou hostname) desde que a origem esteja na porta do frontend
