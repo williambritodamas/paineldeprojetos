@@ -77,3 +77,18 @@ export async function reiniciarProcessoPm2(id: number): Promise<void> {
 export async function pararProcessoPm2(id: number): Promise<void> {
   await api.post(`/admin/pm2/${id}/parar`);
 }
+
+// POST /api/admin/pm2/processos/:processId/iniciar
+export async function iniciarProcessoExtra(processId: number): Promise<void> {
+  await api.post(`/admin/pm2/processos/${processId}/iniciar`);
+}
+
+// POST /api/admin/pm2/processos/:processId/reiniciar
+export async function reiniciarProcessoExtra(processId: number): Promise<void> {
+  await api.post(`/admin/pm2/processos/${processId}/reiniciar`);
+}
+
+// POST /api/admin/pm2/processos/:processId/parar
+export async function pararProcessoExtra(processId: number): Promise<void> {
+  await api.post(`/admin/pm2/processos/${processId}/parar`);
+}
