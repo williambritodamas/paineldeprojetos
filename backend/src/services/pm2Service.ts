@@ -2,10 +2,12 @@
 // Gerencia os processos dos projetos: iniciar, parar, reiniciar,
 // habilitar/desabilitar inicialização automática (pm2 save) e status.
 //
-// O nome do processo no PM2 usa o campo configurável "pm2Name" do projeto
+// Um projeto pode ter vários processos (principal + adicionais). Cada um é
+// representado por uma "UnidadeProcesso" e gerenciado de forma independente.
+//
+// O nome do processo principal usa o campo configurável "pm2Name" do projeto
 // (ex.: "workshop") quando preenchido; senão, cai no padrão estável
-// "proj-<id>", permitindo que renomeações do projeto no painel não
-// quebrem o gerenciamento.
+// "proj-<id>". Os processos adicionais usam "proj-<id>-<slug(nome)>".
 
 import os from "os";
 import path from "path";
@@ -13,13 +15,12 @@ import fs from "fs";
 import pm2 from "pm2";
 import { ErroNegocio } from "../utils/helpers";
 
-// Projeto no formato mínimo necessário para o PM2.
-export interface ProjetoPm2 {
-  id: number;
-  name: string;
+// Unidade de processo executável no PM2.
+export interface UnidadeProcesso {
+  // Nome efetivo do processo no PM2.
+  processName: string;
   folderPath: string | null;
   script: string;
-  pm2Name?: string | null;
 }
 
 // Status simplificado de um processo do PM2.
@@ -58,14 +59,82 @@ function serializar<T>(operacao: () => Promise<T>): Promise<T> {
   return resultado;
 }
 
-// Nome do processo no PM2.
+// Nome do processo principal no PM2.
 // Usa o nome configurado (pm2Name) quando informado; caso contrário,
 // mantém o padrão estável "proj-<id>".
-export function nomeProcesso(projeto: { id: number; pm2Name?: string | null }): string {
+export function nomeProcesso(projeto: {
+  id: number;
+  pm2Name?: string | null;
+}): string {
   const nomeConfigurado = projeto.pm2Name?.trim();
   return nomeConfigurado && nomeConfigurado.length > 0
     ? nomeConfigurado
     : `proj-${projeto.id}`;
+}
+
+// Deixa o texto pronto para compor um nome de processo no PM2.
+function slugificar(texto: string): string {
+  return texto
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+// Nome de um processo adicional no PM2: "proj-<id>-<slug(nome)>".
+export function nomeProcessoExtra(projetoId: number, label: string): string {
+  const slug = slugificar(label);
+  return `proj-${projetoId}-${slug || "processo"}`;
+}
+
+// Monta a unidade do processo principal do projeto.
+export function montarUnidadePrincipal(projeto: {
+  id: number;
+  folderPath: string | null;
+  script: string;
+  pm2Name?: string | null;
+}): UnidadeProcesso {
+  return {
+    processName: nomeProcesso(projeto),
+    folderPath: projeto.folderPath,
+    script: projeto.script,
+  };
+}
+
+// Monta a unidade de um processo adicional do projeto.
+export function montarUnidadeExtra(
+  projetoId: number,
+  processo: { label: string; folderPath: string; script: string }
+): UnidadeProcesso {
+  return {
+    processName: nomeProcessoExtra(projetoId, processo.label),
+    folderPath: processo.folderPath,
+    script: processo.script,
+  };
+}
+
+// Monta todas as unidades (principal + adicionais) de um projeto.
+export function montarUnidadesProjeto(
+  projeto: {
+    id: number;
+    folderPath: string | null;
+    script: string;
+    pm2Name?: string | null;
+  },
+  processosExtras: Array<{
+    label: string;
+    folderPath: string;
+    script: string;
+  }>
+): UnidadeProcesso[] {
+  const unidades = [montarUnidadePrincipal(projeto)];
+
+  for (const processo of processosExtras) {
+    unidades.push(montarUnidadeExtra(projeto.id, processo));
+  }
+
+  return unidades;
 }
 
 function conectarAoPm2(): Promise<void> {
@@ -263,105 +332,116 @@ function parsearComando(comando: string): { script: string; args: string[] } {
   return { script: partes[0], args: partes.slice(1) };
 }
 
-function validarProjetoPm2(projeto: ProjetoPm2): void {
-  if (!projeto.folderPath || projeto.folderPath.trim().length === 0) {
+// Exige que a unidade tenha a pasta configurada.
+function validarUnidade(unidade: UnidadeProcesso): void {
+  if (!unidade.folderPath || unidade.folderPath.trim().length === 0) {
     throw new ErroNegocio(
       400,
-      "Configure o caminho da pasta do projeto antes de gerenciá-lo pelo PM2."
+      "Configure o caminho da pasta do processo antes de gerenciá-lo pelo PM2."
     );
   }
 }
 
-// Monta a configuração de início do processo no PM2.
-function montarConfigProcesso(projeto: ProjetoPm2): object {
-  validarProjetoPm2(projeto);
-  const { script, args } = parsearComando(projeto.script);
+// Monta a configuração de início da unidade no PM2.
+function montarConfigUnidade(unidade: UnidadeProcesso): object {
+  validarUnidade(unidade);
+  const { script, args } = parsearComando(unidade.script);
 
   return {
-    name: nomeProcesso(projeto),
+    name: unidade.processName,
     script,
     args,
-    cwd: projeto.folderPath!.trim(),
+    cwd: unidade.folderPath!.trim(),
     exec_mode: "fork",
   };
 }
 
+// Localiza uma unidade na lista de processos do PM2.
 async function obterProcessoSeExistir(
-  projeto: ProjetoPm2
+  processName: string
 ): Promise<EstruturaProcesso | undefined> {
-  const nome = nomeProcesso(projeto);
   const lista = await listarProcessos();
   return lista.find(
-    (processo) => (processo.pm2_env?.name ?? processo.name) === nome
+    (processo) => (processo.pm2_env?.name ?? processo.name) === processName
   );
 }
 
-// Garante que o processo esteja registrado, senão lança erro.
-async function garantirProcesso(projeto: ProjetoPm2): Promise<string> {
-  const existente = await obterProcessoSeExistir(projeto);
+// Garante que a unidade esteja registrada, senão lança erro.
+async function garantirProcesso(unidade: UnidadeProcesso): Promise<string> {
+  const existente = await obterProcessoSeExistir(unidade.processName);
 
   if (!existente) {
     throw new ErroNegocio(
       400,
-      `O projeto "${projeto.name}" não está registrado no PM2.`
+      `O processo "${unidade.processName}" não está registrado no PM2.`
     );
   }
 
-  return nomeProcesso(projeto);
+  return unidade.processName;
 }
 
-// Habilita a inicialização automática: registra o processo e salva o dump.
-export async function habilitarAutostart(projeto: ProjetoPm2): Promise<void> {
+// Habilita a inicialização automática: registra todos os processos e salva o
+// dump para que sejam restaurados no boot.
+export async function habilitarAutostart(
+  unidades: UnidadeProcesso[]
+): Promise<void> {
   return serializar(() =>
     executarNoPm2(async () => {
-      const config = montarConfigProcesso(projeto);
-      await iniciarProcessoNoPm2(config);
+      for (const unidade of unidades) {
+        const config = montarConfigUnidade(unidade);
+        await iniciarProcessoNoPm2(config);
+      }
       await salvarDump();
     })
   );
 }
 
-// Desabilita a inicialização automática: remove o processo e salva o dump.
-export async function desabilitarAutostart(projeto: ProjetoPm2): Promise<void> {
+// Desabilita a inicialização automática: remove todos os processos e salva o
+// dump para que não sejam restaurados no boot.
+export async function desabilitarAutostart(
+  unidades: UnidadeProcesso[]
+): Promise<void> {
   return serializar(() =>
     executarNoPm2(async () => {
-      await excluirProcessoNoPm2(nomeProcesso(projeto));
+      for (const unidade of unidades) {
+        await excluirProcessoNoPm2(unidade.processName);
+      }
       await salvarDump();
     })
   );
 }
 
-// Inicia o processo (registra se necessário) sem alterar o autostart.
-export async function iniciarProcesso(projeto: ProjetoPm2): Promise<void> {
+// Inicia um processo (registra se necessário) sem alterar o autostart.
+export async function iniciarProcesso(unidade: UnidadeProcesso): Promise<void> {
   return serializar(() =>
     executarNoPm2(async () => {
-      const existente = await obterProcessoSeExistir(projeto);
+      const existente = await obterProcessoSeExistir(unidade.processName);
 
       if (!existente) {
-        const config = montarConfigProcesso(projeto);
+        const config = montarConfigUnidade(unidade);
         await iniciarProcessoNoPm2(config);
       } else {
-        await reiniciarProcessoNoPm2(nomeProcesso(projeto));
+        await reiniciarProcessoNoPm2(unidade.processName);
       }
     })
   );
 }
 
 // Reinicia um processo já registrado.
-export async function reiniciarProcesso(projeto: ProjetoPm2): Promise<void> {
+export async function reiniciarProcesso(unidade: UnidadeProcesso): Promise<void> {
   return serializar(() =>
     executarNoPm2(async () => {
-      const nome = await garantirProcesso(projeto);
+      const nome = await garantirProcesso(unidade);
       await reiniciarProcessoNoPm2(nome);
     })
   );
 }
 
 // Para um processo já registrado.
-export async function pararProcesso(projeto: ProjetoPm2): Promise<void> {
+export async function pararProcesso(unidade: UnidadeProcesso): Promise<void> {
   return serializar(() =>
     executarNoPm2(async () => {
-      const nome = await garantirProcesso(projeto);
+      const nome = await garantirProcesso(unidade);
       await pararProcessoNoPm2(nome);
     })
   );
