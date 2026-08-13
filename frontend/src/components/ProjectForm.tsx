@@ -1,5 +1,6 @@
 // Formulário de cadastro/edição de projeto.
 
+import { Plus, Trash2 } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import type { CriarProjetoDTO, Project } from "../types";
 
@@ -9,6 +10,14 @@ interface Props {
   aoSalvar: (dados: CriarProjetoDTO) => Promise<void>;
   aoCancelar: () => void;
   salvando: boolean;
+}
+
+interface LinhaProcessoExtra {
+  id?: number;
+  label: string;
+  folderPath: string;
+  script: string;
+  port: string;
 }
 
 export default function ProjectForm({
@@ -30,6 +39,41 @@ export default function ProjectForm({
   const [nomeProcesso, setNomeProcesso] = useState(
     projeto?.pm2Name ?? ""
   );
+  const [temProcessosExtras, setTemProcessosExtras] = useState(
+    (projeto?.processes?.length ?? 0) > 0
+  );
+  const [processosExtras, setProcessosExtras] = useState<LinhaProcessoExtra[]>(
+    projeto?.processes?.map((processo) => ({
+      id: processo.id,
+      label: processo.label,
+      folderPath: processo.folderPath,
+      script: processo.script,
+      port: String(processo.port),
+    })) ?? []
+  );
+
+  function adicionarProcesso() {
+    setProcessosExtras((atual) => [
+      ...atual,
+      { label: "", folderPath: "", script: "npm start", port: "" },
+    ]);
+  }
+
+  function removerProcesso(indice: number) {
+    setProcessosExtras((atual) => atual.filter((_, i) => i !== indice));
+  }
+
+  function atualizarProcesso(
+    indice: number,
+    campo: keyof LinhaProcessoExtra,
+    valor: string
+  ) {
+    setProcessosExtras((atual) =>
+      atual.map((processo, i) =>
+        i === indice ? { ...processo, [campo]: valor } : processo
+      )
+    );
+  }
 
   async function aoEnviar(e: FormEvent) {
     e.preventDefault();
@@ -47,6 +91,15 @@ export default function ProjectForm({
             folderPath: caminhoPasta.trim(),
             script: comando.trim() || "npm start",
             pm2Name: nomeProcesso.trim() || null,
+            processes: temProcessosExtras
+              ? processosExtras.map((processo) => ({
+                  id: processo.id,
+                  label: processo.label.trim(),
+                  folderPath: processo.folderPath.trim(),
+                  script: processo.script.trim() || "npm start",
+                  port: Number(processo.port),
+                }))
+              : [],
           }
         : {}),
     });
@@ -182,6 +235,125 @@ export default function ProjectForm({
               </code>{" "}
               (apenas admin).
             </p>
+          </div>
+
+          <div className="rounded-xl border border-base-600 bg-base-800/40 p-4">
+            <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-slate-300">
+              <input
+                type="checkbox"
+                checked={temProcessosExtras}
+                onChange={(e) => {
+                  setTemProcessosExtras(e.target.checked);
+                  if (!e.target.checked) {
+                    setProcessosExtras([]);
+                  }
+                }}
+                className="h-4 w-4 accent-sky-500"
+              />
+              Este projeto roda em mais de um processo?
+            </label>
+            <p className="mt-1 text-xs text-slate-500">
+              Marque se, além do processo principal, houver outros serviços
+              (ex.: backend) para subir junto no PM2.
+            </p>
+
+            {temProcessosExtras && (
+              <div className="mt-4 space-y-3">
+                {processosExtras.map((processo, indice) => (
+                  <div
+                    key={indice}
+                    className="rounded-lg border border-base-600 bg-base-700/50 p-3"
+                  >
+                    <div className="mb-2 flex items-center justify-between">
+                      <span className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                        Processo {indice + 1}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => removerProcesso(indice)}
+                        aria-label={`Remover processo ${indice + 1}`}
+                        className="text-slate-400 transition hover:text-red-400"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="campo-label">Nome</label>
+                        <input
+                          type="text"
+                          required
+                          value={processo.label}
+                          onChange={(e) =>
+                            atualizarProcesso(indice, "label", e.target.value)
+                          }
+                          placeholder="Ex.: Backend"
+                          className="campo-input"
+                        />
+                      </div>
+                      <div>
+                        <label className="campo-label">Porta</label>
+                        <input
+                          type="number"
+                          required
+                          min={1}
+                          max={65535}
+                          value={processo.port}
+                          onChange={(e) =>
+                            atualizarProcesso(indice, "port", e.target.value)
+                          }
+                          placeholder="Ex.: 3003"
+                          className="campo-input"
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="campo-label">
+                          Caminho da pasta no servidor
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={processo.folderPath}
+                          onChange={(e) =>
+                            atualizarProcesso(
+                              indice,
+                              "folderPath",
+                              e.target.value
+                            )
+                          }
+                          placeholder="Ex.: /home/usuario/apps/sigpat-backend"
+                          className="campo-input"
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="campo-label">
+                          Comando de execução
+                        </label>
+                        <input
+                          type="text"
+                          value={processo.script}
+                          onChange={(e) =>
+                            atualizarProcesso(indice, "script", e.target.value)
+                          }
+                          placeholder="Ex.: npm start"
+                          className="campo-input"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={adicionarProcesso}
+                  className="botao-secundario w-full sm:w-auto"
+                >
+                  <Plus className="h-4 w-4" />
+                  Adicionar processo
+                </button>
+              </div>
+            )}
           </div>
         </>
       )}
