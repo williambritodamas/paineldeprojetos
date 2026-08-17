@@ -243,18 +243,6 @@ function iniciarProcessoNoPm2(config: object): Promise<void> {
   });
 }
 
-function reiniciarProcessoNoPm2(nome: string): Promise<void> {
-  return new Promise((resolver, rejeitar) => {
-    pm2.restart(nome, (erro) => {
-      if (erro) {
-        rejeitar(erro);
-      } else {
-        resolver();
-      }
-    });
-  });
-}
-
 function pararProcessoNoPm2(nome: string): Promise<void> {
   return new Promise((resolver, rejeitar) => {
     pm2.stop(nome, (erro) => {
@@ -430,6 +418,87 @@ function montarAmbiente(unidade: UnidadeProcesso): Record<string, string> {
   return ambiente;
 }
 
+// Extras fixos que nunca devem vazar do painel para os processos dos projetos.
+const CHAVES_FIXAS_IGNORADAS = [
+  "PORT",
+  "INIT_CWD",
+  "OLDPWD",
+  "npm_config_local_prefix",
+  "npm_config_global_prefix",
+  "npm_package_line",
+  "npm_lifecycle_event",
+  "npm_lifecycle_script",
+  // Variáveis internas do PM2 herdadas do processo que aciona o PM2 (o próprio
+  // painel). Se "pm_id" chegar ao processo filho, o God.executeApp reutiliza o
+  // id do painel em vez de gerar um novo, sobrescrevendo a entrada do painel e
+  // reiniciando-o com o config do filho.
+  "pm_id",
+  "pm_uptime",
+  "pm_cwd",
+  "pm_exec_path",
+  "pm_out_log_path",
+  "pm_err_log_path",
+  "pm_pid_path",
+  "unique_id",
+  "instance_var",
+  "NODE_APP_INSTANCE",
+  "name",
+  "namespace",
+  "merge_logs",
+  "autostart",
+  "autorestart",
+  "exec_mode",
+  "exec_interpreter",
+  "kill_retry_time",
+  "km_link",
+  "automation",
+  "node_version",
+  "exit_code",
+  "created_at",
+  "PM2_HOME",
+  "PM2_USAGE",
+  "pmx",
+];
+
+// Fallback quando o .env do painel não pode ser lido (chaves conhecidas).
+const CHAVES_FALLBACK_IGNORADAS = [
+  ...CHAVES_FIXAS_IGNORADAS,
+  "FRONTEND_URL",
+  "DATABASE_URL",
+  "JWT_SECRET",
+  "ADMIN_NAME",
+  "ADMIN_USERNAME",
+  "ADMIN_PASSWORD",
+  "AUTOR_SISTEMA",
+  "GESTOR_SETOR",
+];
+
+// Lista as chaves que o painel não deve repassar aos processos dos projetos.
+// Por padrão, o PM2 mescla o ambiente do próprio painel no processo filho
+// (Common.js prepareAppConf). Sem filtro, variáveis do painel (ex.: a
+// FRONTEND_URL, DATABASE_URL e JWT_SECRET do .env dele) sobrescrevem as
+// variáveis dos projetos. O "filter_env" (deny-list por substring) remove
+// essas chaves do ambiente herdado, mantendo PATH, HOME, NVM_* etc.
+//
+// A lista é montada dinamicamente a partir do .env do painel, para que
+// qualquer variável adicionada no futuro também seja bloqueada.
+function montarFiltroEnvPainel(): string[] {
+  try {
+    const caminhoEnv = path.join(process.cwd(), ".env");
+    if (fs.existsSync(caminhoEnv)) {
+      const conteudo = fs.readFileSync(caminhoEnv, "utf8");
+      const chavesDoPainel = Object.keys(parsearEnv(conteudo));
+      if (chavesDoPainel.length > 0) {
+        return [...new Set([...CHAVES_FIXAS_IGNORADAS, ...chavesDoPainel])];
+      }
+    }
+  } catch {
+    // Sem leitura disponível: cai no fallback abaixo.
+  }
+
+  return CHAVES_FALLBACK_IGNORADAS;
+}
+
 // Exige que a unidade tenha a pasta configurada.
 function validarUnidade(unidade: UnidadeProcesso): void {
   if (!unidade.folderPath || unidade.folderPath.trim().length === 0) {
@@ -452,6 +521,10 @@ function montarConfigUnidade(unidade: UnidadeProcesso): object {
     args,
     cwd: unidade.folderPath!.trim(),
     exec_mode: "fork",
+    // Impede que variáveis do ambiente do painel vazem para o processo
+    // filho (deny-list por substring). Mantém o sistema (PATH, HOME,
+    // NVM_*) e remove as chaves próprias do painel.
+    filter_env: montarFiltroEnvPainel(),
   };
 
   // Variáveis de ambiente: injeta "PORT" e as definidas no cadastro.
@@ -507,6 +580,10 @@ export async function habilitarAutostart(
   return serializar(() =>
     executarNoPm2(async () => {
       for (const unidade of unidades) {
+        // Remove o registro anterior (se existir) para que o processo seja
+        // recriado com o ambiente limpo e o filter_env aplicado. O PM2, ao
+        // reiniciar um nome já existente, reutiliza o ambiente antigo.
+        await excluirProcessoNoPm2(unidade.processName);
         const config = montarConfigUnidade(unidade);
         await iniciarProcessoNoPm2(config);
       }
@@ -534,14 +611,17 @@ export async function desabilitarAutostart(
 export async function iniciarProcesso(unidade: UnidadeProcesso): Promise<void> {
   return serializar(() =>
     executarNoPm2(async () => {
-      const existente = await obterProcessoSeExistir(unidade.processName);
+      const config = montarConfigUnidade(unidade);
 
-      if (!existente) {
-        const config = montarConfigUnidade(unidade);
-        await iniciarProcessoNoPm2(config);
-      } else {
-        await reiniciarProcessoNoPm2(unidade.processName);
+      // Se já existe com o nome, remove antes de recriar para aplicar o
+      // ambiente limpo (filter_env). O restart direto por nome reutilizaria
+      // o ambiente antigo, possivelmente com variáveis do painel.
+      const existente = await obterProcessoSeExistir(unidade.processName);
+      if (existente) {
+        await excluirProcessoNoPm2(unidade.processName);
       }
+
+      await iniciarProcessoNoPm2(config);
     })
   );
 }
@@ -550,8 +630,15 @@ export async function iniciarProcesso(unidade: UnidadeProcesso): Promise<void> {
 export async function reiniciarProcesso(unidade: UnidadeProcesso): Promise<void> {
   return serializar(() =>
     executarNoPm2(async () => {
-      const nome = await garantirProcesso(unidade);
-      await reiniciarProcessoNoPm2(nome);
+      // O processo precisa estar registrado para o reinício fazer sentido.
+      await garantirProcesso(unidade);
+
+      // Recria o registro com a configuração atual (incluindo o env editado
+      // do projeto). O pm2.restart por nome apenas reutilizaria o ambiente
+      // antigo e ignoraria mudanças nas variáveis de ambiente.
+      await excluirProcessoNoPm2(unidade.processName);
+      const config = montarConfigUnidade(unidade);
+      await iniciarProcessoNoPm2(config);
     })
   );
 }
