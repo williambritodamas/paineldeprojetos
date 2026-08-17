@@ -262,14 +262,18 @@ export function validarProjeto(dados: {
     return "O campo de reinício automático deve ser verdadeiro ou falso.";
   }
 
-  const erroAtraso = validarInteiroNaoNegativo(restartDelay, "de atraso de reinício");
-  if (erroAtraso) {
-    return erroAtraso;
+  if (restartDelay !== undefined) {
+    const erroAtraso = validarInteiroNaoNegativo(restartDelay, "de atraso de reinício");
+    if (erroAtraso) {
+      return erroAtraso;
+    }
   }
 
-  const erroMaxReinicios = validarInteiroNaoNegativo(maxRestarts, "de máximo de reinícios");
-  if (erroMaxReinicios) {
-    return erroMaxReinicios;
+  if (maxRestarts !== undefined) {
+    const erroMaxReinicios = validarInteiroNaoNegativo(maxRestarts, "de máximo de reinícios");
+    if (erroMaxReinicios) {
+      return erroMaxReinicios;
+    }
   }
 
   const erroMemoria = validarMemoria(maxMemoryRestart);
@@ -338,20 +342,24 @@ export function validarProcessos(processos: unknown): string | null {
       return `Processo "${rotulo}": o campo de reinício automático deve ser verdadeiro ou falso.`;
     }
 
-    const erroAtraso = validarInteiroNaoNegativo(
-      corpo.restartDelay,
-      "de atraso de reinício"
-    );
-    if (erroAtraso) {
-      return `Processo "${rotulo}": ${erroAtraso}`;
+    if (corpo.restartDelay !== undefined) {
+      const erroAtraso = validarInteiroNaoNegativo(
+        corpo.restartDelay,
+        "de atraso de reinício"
+      );
+      if (erroAtraso) {
+        return `Processo "${rotulo}": ${erroAtraso}`;
+      }
     }
 
-    const erroMaxReinicios = validarInteiroNaoNegativo(
-      corpo.maxRestarts,
-      "de máximo de reinícios"
-    );
-    if (erroMaxReinicios) {
-      return `Processo "${rotulo}": ${erroMaxReinicios}`;
+    if (corpo.maxRestarts !== undefined) {
+      const erroMaxReinicios = validarInteiroNaoNegativo(
+        corpo.maxRestarts,
+        "de máximo de reinícios"
+      );
+      if (erroMaxReinicios) {
+        return `Processo "${rotulo}": ${erroMaxReinicios}`;
+      }
     }
 
     const erroMemoria = validarMemoria(corpo.maxMemoryRestart);
