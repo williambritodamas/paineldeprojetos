@@ -2,7 +2,9 @@
 
 import { Plus, Trash2 } from "lucide-react";
 import { useState, type FormEvent } from "react";
+import { ICONES_DISPONIVEIS } from "../constants/projectIcons";
 import type { CriarProjetoDTO, Project } from "../types";
+import ProjectIcon from "./ProjectIcon";
 
 interface Props {
   projeto?: Project;
@@ -180,37 +182,63 @@ export default function ProjectForm({
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div>
-          <label htmlFor="icone" className="campo-label">
-            Ícone
-          </label>
-          <input
-            id="icone"
-            type="text"
-            value={icone}
-            onChange={(e) => setIcone(e.target.value)}
-            placeholder="Ex.: 🎬"
-            className="campo-input"
-          />
+      <div>
+        <label className="campo-label">Ícone</label>
+        <div className="grid grid-cols-6 gap-2 sm:grid-cols-8">
+          {ICONES_DISPONIVEIS.map((opcao) => {
+            const selecionado = opcao.nome === icone;
+            return (
+              <button
+                key={opcao.nome}
+                type="button"
+                onClick={() => setIcone(opcao.nome)}
+                title={opcao.nome}
+                aria-label={`Ícone ${opcao.nome}`}
+                aria-pressed={selecionado}
+                className={`flex h-10 w-full items-center justify-center rounded-lg border transition ${
+                  selecionado
+                    ? "border-sky-500 bg-sky-500/15 text-sky-400"
+                    : "border-base-600 bg-base-700 text-slate-400 hover:border-base-500 hover:text-slate-200"
+                }`}
+              >
+                <ProjectIcon icon={opcao.nome} className="h-5 w-5" />
+              </button>
+            );
+          })}
         </div>
+        <div className="mt-2 flex items-center justify-between">
+          <p className="text-xs text-slate-500">
+            {icone
+              ? `Ícone selecionado: ${icone}`
+              : "Nenhum ícone selecionado."}
+          </p>
+          {icone && (
+            <button
+              type="button"
+              onClick={() => setIcone("")}
+              className="text-xs text-slate-400 transition hover:text-red-400"
+            >
+              Remover ícone
+            </button>
+          )}
+        </div>
+      </div>
 
-        <div>
-          <label htmlFor="porta" className="campo-label">
-            Porta
-          </label>
-          <input
-            id="porta"
-            type="number"
-            required
-            min={1}
-            max={65535}
-            value={porta}
-            onChange={(e) => setPorta(e.target.value)}
-            placeholder="Ex.: 3002"
-            className="campo-input"
-          />
-        </div>
+      <div>
+        <label htmlFor="porta" className="campo-label">
+          Porta
+        </label>
+        <input
+          id="porta"
+          type="number"
+          required
+          min={1}
+          max={65535}
+          value={porta}
+          onChange={(e) => setPorta(e.target.value)}
+          placeholder="Ex.: 3002"
+          className="campo-input"
+        />
       </div>
 
       {isAdmin && (

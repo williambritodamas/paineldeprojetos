@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import type { Project, ProjectProcess } from "../types";
 import { gerarUrlProjeto } from "../utils/projectUrl";
+import ProjectIcon from "./ProjectIcon";
 import StatusBadge from "./StatusBadge";
 
 interface Props {
@@ -122,8 +123,8 @@ export default function AdminProjectCard({
   return (
     <article className="card-padrao space-y-4 p-5">
       <div className="flex gap-5">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-base-700 text-2xl">
-          {project.icon || "📁"}
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-base-700">
+          <ProjectIcon icon={project.icon} className="h-6 w-6" />
         </div>
 
         <div className="min-w-0 flex-1 space-y-1.5">

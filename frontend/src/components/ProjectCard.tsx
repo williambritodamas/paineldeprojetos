@@ -4,6 +4,7 @@
 import { ExternalLink, LifeBuoy } from "lucide-react";
 import type { Project } from "../types";
 import { gerarUrlProjeto } from "../utils/projectUrl";
+import ProjectIcon from "./ProjectIcon";
 import StatusBadge from "./StatusBadge";
 
 interface Props {
@@ -16,8 +17,8 @@ export default function ProjectCard({ project }: Props) {
   return (
     <article className="card-padrao flex flex-col gap-4 p-6 transition hover:border-sky-500/40">
       <div className="flex items-start justify-between gap-3">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-base-700 text-2xl">
-          {project.icon || "📁"}
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-base-700">
+          <ProjectIcon icon={project.icon} className="h-6 w-6" />
         </div>
         <StatusBadge active={project.active} />
       </div>
