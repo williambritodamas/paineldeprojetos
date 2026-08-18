@@ -12,6 +12,7 @@
 import os from "os";
 import path from "path";
 import fs from "fs";
+import { execSync } from "child_process";
 import pm2 from "pm2";
 import { ErroNegocio } from "../utils/helpers";
 
@@ -255,11 +256,148 @@ function pararProcessoNoPm2(nome: string): Promise<void> {
   });
 }
 
-function excluirProcessoNoPm2(nome: string): Promise<void> {
+function excluirProcessoNoPm2(
+  nome: string,
+  porta?: number | null
+): Promise<void> {
   return new Promise((resolver) => {
     // Processo pode não existir (delete retorna erro); a remoção é best-effort.
-    pm2.delete(nome, () => resolver());
+    pm2.delete(nome, async () => {
+      if (porta) {
+        await derrubarProcessosDaPorta(porta);
+      }
+      resolver();
+    });
   });
+}
+
+// Mata processos órfãos que ainda escutam na porta informada — e também os
+// ancestrais deles (ex.: o "sh -c next dev" e o "next dev" que ficaram presos
+// ao init). É a segurança extra do painel: mesmo que o PM2 mate só o pid raiz
+// (SimpleKill, ou quando o raiz já morreu e os filhos ficaram órfãos presos ao
+// init), garante que a porta seja liberada para que outro processo consiga
+// subir sem conflito.
+//
+// Usa "fuser <porta>/tcp" (confiável no ambiente) com fallback para "lsof".
+async function derrubarProcessosDaPorta(
+  porta: number | null | undefined
+): Promise<void> {
+  if (!porta || !Number.isInteger(porta)) {
+    return;
+  }
+
+  const escutando = pidsEscutandoNaPorta(porta);
+
+  if (escutando.length === 0) {
+    return;
+  }
+
+  // Reúne os pids da porta e a cadeia de ancestrais até o init. Matamos
+  // todos juntos (bottom-up) para não deixar o "next dev"/"nest start"
+  // vivos depois que o filho que escuta a porta morrer.
+  const pids = new Map<number, number>();
+  for (const pid of escutando) {
+    const cadeia = ancestraisDoPid(pid);
+    for (let i = 0; i < cadeia.length; i += 1) {
+      pids.set(cadeia[i], i);
+    }
+  }
+
+  const alvos = [...pids.entries()]
+    .filter(([pid]) => pid !== process.pid)
+    .sort((a, b) => b[1] - a[1]) // filhos (profundidade maior) primeiro.
+    .map(([pid]) => pid);
+
+  if (alvos.length === 0) {
+    return;
+  }
+
+  for (const pid of alvos) {
+    try {
+      process.kill(pid, "SIGTERM");
+    } catch {
+      // O processo já encerrou entre a leitura e o kill.
+    }
+  }
+
+  await new Promise((resolver) => setTimeout(resolver, 500));
+
+  for (const pid of alvos) {
+    try {
+      process.kill(pid, "SIGKILL");
+    } catch {
+      // O processo já encerrou.
+    }
+  }
+}
+
+// Cadeia de ancestrais de um pid até o init (pid 1), do pid para cima.
+// Usa /proc para não depender de ferramentas externas.
+function ancestraisDoPid(pid: number): number[] {
+  const cadeia: number[] = [pid];
+  const visto = new Set<number>();
+  let atual = pid;
+
+  while (atual > 1 && !visto.has(atual)) {
+    visto.add(atual);
+
+    let ppid: number | null = null;
+    try {
+      const stat = fs.readFileSync(`/proc/${atual}/stat`, "utf8");
+      // O comm do processo pode conter espaços e ")" — o ppid é o campo 4
+      // (1-indexado), logo após o último ")" do comm.
+      const posParen = stat.lastIndexOf(")");
+      ppid = Number(stat.slice(posParen + 2).split(" ")[1]);
+    } catch {
+      // Processo já encerrou; encerra a subida.
+      break;
+    }
+
+    if (!ppid || ppid <= 1) {
+      break;
+    }
+
+    atual = ppid;
+    cadeia.push(atual);
+  }
+
+  return cadeia;
+}
+
+// Retorna os PIDs dos processos escutando na porta via fuser/lsof.
+function pidsEscutandoNaPorta(porta: number): number[] {
+  const tentativas = [`fuser ${porta}/tcp`, `lsof -ti tcp:${porta}`];
+
+  for (const comando of tentativas) {
+    let saida: string;
+    try {
+      saida = execSync(comando, {
+        encoding: "utf8",
+        stdio: ["pipe", "pipe", "pipe"],
+      }).trim();
+    } catch {
+      // Porta livre ou comando indisponível; tenta o próximo.
+      continue;
+    }
+
+    if (!saida) {
+      continue;
+    }
+
+    const pids = saida
+      // A saída do fuser vem como "3002/tcp: 84168 84139" e a do lsof
+      // como um pid por linha. Extrai todos os números.
+      .split(/[\s,]+/)
+      .map((valor) => valor.replace(/[^0-9-]/g, ""))
+      .map(Number)
+      .filter((pid) => pid > 0);
+
+    if (pids.length > 0) {
+      return pids;
+    }
+  }
+
+  return [];
 }
 
 // Local do arquivo de dump usado na restauração do boot.
@@ -521,6 +659,10 @@ function montarConfigUnidade(unidade: UnidadeProcesso): object {
     args,
     cwd: unidade.folderPath!.trim(),
     exec_mode: "fork",
+    // Mata a árvore inteira de processos ao parar/remover a unidade.
+    // Sem isso, o PM2 usa "SimpleKill" (mata só o pid raiz) e os filhos
+    // (ex.: next-server, nest) ficam órfãos segurando as portas.
+    treekill: true,
     // Impede que variáveis do ambiente do painel vazem para o processo
     // filho (deny-list por substring). Mantém o sistema (PATH, HOME,
     // NVM_*) e remove as chaves próprias do painel.
@@ -583,7 +725,8 @@ export async function habilitarAutostart(
         // Remove o registro anterior (se existir) para que o processo seja
         // recriado com o ambiente limpo e o filter_env aplicado. O PM2, ao
         // reiniciar um nome já existente, reutiliza o ambiente antigo.
-        await excluirProcessoNoPm2(unidade.processName);
+        // A porta é derrubada junto para eliminar eventuais órfãos.
+        await excluirProcessoNoPm2(unidade.processName, unidade.port);
         const config = montarConfigUnidade(unidade);
         await iniciarProcessoNoPm2(config);
       }
@@ -600,7 +743,7 @@ export async function desabilitarAutostart(
   return serializar(() =>
     executarNoPm2(async () => {
       for (const unidade of unidades) {
-        await excluirProcessoNoPm2(unidade.processName);
+        await excluirProcessoNoPm2(unidade.processName, unidade.port);
       }
       await salvarDump();
     })
@@ -618,7 +761,7 @@ export async function iniciarProcesso(unidade: UnidadeProcesso): Promise<void> {
       // o ambiente antigo, possivelmente com variáveis do painel.
       const existente = await obterProcessoSeExistir(unidade.processName);
       if (existente) {
-        await excluirProcessoNoPm2(unidade.processName);
+        await excluirProcessoNoPm2(unidade.processName, unidade.port);
       }
 
       await iniciarProcessoNoPm2(config);
@@ -636,7 +779,7 @@ export async function reiniciarProcesso(unidade: UnidadeProcesso): Promise<void>
       // Recria o registro com a configuração atual (incluindo o env editado
       // do projeto). O pm2.restart por nome apenas reutilizaria o ambiente
       // antigo e ignoraria mudanças nas variáveis de ambiente.
-      await excluirProcessoNoPm2(unidade.processName);
+      await excluirProcessoNoPm2(unidade.processName, unidade.port);
       const config = montarConfigUnidade(unidade);
       await iniciarProcessoNoPm2(config);
     })
@@ -649,6 +792,9 @@ export async function pararProcesso(unidade: UnidadeProcesso): Promise<void> {
     executarNoPm2(async () => {
       const nome = await garantirProcesso(unidade);
       await pararProcessoNoPm2(nome);
+      // O stop pode deixar filhos órfãos segurando a porta; derruba para
+      // liberar de vez.
+      await derrubarProcessosDaPorta(unidade.port);
     })
   );
 }
