@@ -36,10 +36,12 @@ async function obterProjetoOuErro(
 }
 
 // Localiza um processo adicional, respondendo erro quando inválido.
+// Retorna a unidade de processo e o autostart do projeto pai (para manter o
+// dump de boot consistente ao iniciar/reiniciar).
 async function obterProcessoExtraOuErro(
   req: RequisicaoAutenticada,
   res: Response
-): Promise<pm2Service.UnidadeProcesso | null> {
+): Promise<{ unidade: pm2Service.UnidadeProcesso; autostart: boolean } | null> {
   const id = Number(req.params.processId);
 
   if (!Number.isInteger(id)) {
@@ -54,7 +56,10 @@ async function obterProcessoExtraOuErro(
     return null;
   }
 
-  return pm2Service.montarUnidadeExtra(processo);
+  return {
+    unidade: pm2Service.montarUnidadeExtra(processo),
+    autostart: processo.project.autostart,
+  };
 }
 
 // Trata erros de negócio e demais erros na resposta.
@@ -129,7 +134,10 @@ export async function iniciar(
   }
 
   try {
-    await pm2Service.iniciarProcesso(pm2Service.montarUnidadePrincipal(projeto));
+    await pm2Service.iniciarProcesso(
+      pm2Service.montarUnidadePrincipal(projeto),
+      projeto.autostart
+    );
     sucessoHttp(res, { ok: true });
   } catch (erro) {
     tratarErro(res, erro, "Erro ao iniciar o processo no PM2.");
@@ -147,7 +155,10 @@ export async function reiniciar(
   }
 
   try {
-    await pm2Service.reiniciarProcesso(pm2Service.montarUnidadePrincipal(projeto));
+    await pm2Service.reiniciarProcesso(
+      pm2Service.montarUnidadePrincipal(projeto),
+      projeto.autostart
+    );
     sucessoHttp(res, { ok: true });
   } catch (erro) {
     tratarErro(res, erro, "Erro ao reiniciar o processo no PM2.");
@@ -177,13 +188,13 @@ export async function iniciarProcessoExtra(
   req: RequisicaoAutenticada,
   res: Response
 ): Promise<void> {
-  const unidade = await obterProcessoExtraOuErro(req, res);
-  if (!unidade) {
+  const processo = await obterProcessoExtraOuErro(req, res);
+  if (!processo) {
     return;
   }
 
   try {
-    await pm2Service.iniciarProcesso(unidade);
+    await pm2Service.iniciarProcesso(processo.unidade, processo.autostart);
     sucessoHttp(res, { ok: true });
   } catch (erro) {
     tratarErro(res, erro, "Erro ao iniciar o processo no PM2.");
@@ -195,13 +206,13 @@ export async function reiniciarProcessoExtra(
   req: RequisicaoAutenticada,
   res: Response
 ): Promise<void> {
-  const unidade = await obterProcessoExtraOuErro(req, res);
-  if (!unidade) {
+  const processo = await obterProcessoExtraOuErro(req, res);
+  if (!processo) {
     return;
   }
 
   try {
-    await pm2Service.reiniciarProcesso(unidade);
+    await pm2Service.reiniciarProcesso(processo.unidade, processo.autostart);
     sucessoHttp(res, { ok: true });
   } catch (erro) {
     tratarErro(res, erro, "Erro ao reiniciar o processo no PM2.");
@@ -213,13 +224,13 @@ export async function pararProcessoExtra(
   req: RequisicaoAutenticada,
   res: Response
 ): Promise<void> {
-  const unidade = await obterProcessoExtraOuErro(req, res);
-  if (!unidade) {
+  const processo = await obterProcessoExtraOuErro(req, res);
+  if (!processo) {
     return;
   }
 
   try {
-    await pm2Service.pararProcesso(unidade);
+    await pm2Service.pararProcesso(processo.unidade);
     sucessoHttp(res, { ok: true });
   } catch (erro) {
     tratarErro(res, erro, "Erro ao parar o processo no PM2.");

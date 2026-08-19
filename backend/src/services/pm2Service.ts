@@ -812,7 +812,12 @@ export async function desabilitarAutostart(
 }
 
 // Inicia um processo (registra se necessário) sem alterar o autostart.
-export async function iniciarProcesso(unidade: UnidadeProcesso): Promise<void> {
+// Quando "manterNoBoot" é true (projeto com início automático ativo), grava o
+// dump para que o processo continue na lista de restauração do boot.
+export async function iniciarProcesso(
+  unidade: UnidadeProcesso,
+  manterNoBoot = false
+): Promise<void> {
   return serializar(() =>
     executarNoPm2(async () => {
       const config = montarConfigUnidade(unidade);
@@ -826,12 +831,21 @@ export async function iniciarProcesso(unidade: UnidadeProcesso): Promise<void> {
       }
 
       await iniciarProcessoNoPm2(config);
+
+      if (manterNoBoot) {
+        await salvarDump();
+      }
     })
   );
 }
 
 // Reinicia um processo já registrado.
-export async function reiniciarProcesso(unidade: UnidadeProcesso): Promise<void> {
+// Quando "manterNoBoot" é true (projeto com início automático ativo), grava o
+// dump para que o processo continue na lista de restauração do boot.
+export async function reiniciarProcesso(
+  unidade: UnidadeProcesso,
+  manterNoBoot = false
+): Promise<void> {
   return serializar(() =>
     executarNoPm2(async () => {
       // O processo precisa estar registrado para o reinício fazer sentido.
@@ -843,6 +857,10 @@ export async function reiniciarProcesso(unidade: UnidadeProcesso): Promise<void>
       await excluirProcessoNoPm2(unidade.processName, unidade.port);
       const config = montarConfigUnidade(unidade);
       await iniciarProcessoNoPm2(config);
+
+      if (manterNoBoot) {
+        await salvarDump();
+      }
     })
   );
 }
