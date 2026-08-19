@@ -53,6 +53,8 @@ export interface StatusProcesso {
 // Estrutura retornada pela função list() do PM2.
 interface EstruturaProcesso {
   name?: string;
+  // PID atual do processo (0 quando parado ou não informado).
+  pid?: number;
   pm2_env?: {
     name?: string;
     status?: string;
@@ -278,6 +280,11 @@ function excluirProcessoNoPm2(
 // init), garante que a porta seja liberada para que outro processo consiga
 // subir sem conflito.
 //
+// NUNCA mata o daemon do PM2, o próprio painel ou processos ainda registrados
+// no PM2 (inclusive de outros projetos): a subida pela cadeia de ancestrais
+// para antes de qualquer PID protegido. Sem esse cuidado, a cadeia subiria até
+// o daemon (o God do PM2) e derrubaria todo o PM2 junto.
+//
 // Usa "fuser <porta>/tcp" (confiável no ambiente) com fallback para "lsof".
 async function derrubarProcessosDaPorta(
   porta: number | null | undefined
@@ -292,19 +299,24 @@ async function derrubarProcessosDaPorta(
     return;
   }
 
-  // Reúne os pids da porta e a cadeia de ancestrais até o init. Matamos
-  // todos juntos (bottom-up) para não deixar o "next dev"/"nest start"
-  // vivos depois que o filho que escuta a porta morrer.
+  // PIDs que nunca podem ser mortos: o próprio painel, o daemon do PM2 e
+  // todos os processos ainda registrados no PM2 (esses são de responsabilidade
+  // do daemon, que os encerra com treekill).
+  const protegidos = await pidsProtegidos();
+
+  // Reúne os pids da porta e a cadeia de ancestrais, parando antes de
+  // qualquer PID protegido. Matamos todos juntos (bottom-up) para não deixar
+  // o "next dev"/"nest start" vivos depois que o filho que escuta a porta
+  // morrer.
   const pids = new Map<number, number>();
   for (const pid of escutando) {
-    const cadeia = ancestraisDoPid(pid);
+    const cadeia = ancestraisDoPid(pid, protegidos);
     for (let i = 0; i < cadeia.length; i += 1) {
       pids.set(cadeia[i], i);
     }
   }
 
   const alvos = [...pids.entries()]
-    .filter(([pid]) => pid !== process.pid)
     .sort((a, b) => b[1] - a[1]) // filhos (profundidade maior) primeiro.
     .map(([pid]) => pid);
 
@@ -331,15 +343,21 @@ async function derrubarProcessosDaPorta(
   }
 }
 
-// Cadeia de ancestrais de um pid até o init (pid 1), do pid para cima.
+// Cadeia de ancestrais de um pid até o init (pid 1), do pid para cima, sem
+// nunca incluir (nem ultrapassar) um PID protegido.
 // Usa /proc para não depender de ferramentas externas.
-function ancestraisDoPid(pid: number): number[] {
-  const cadeia: number[] = [pid];
+function ancestraisDoPid(pid: number, pararEm: Set<number>): number[] {
+  const cadeia: number[] = [];
   const visto = new Set<number>();
   let atual = pid;
 
   while (atual > 1 && !visto.has(atual)) {
+    if (pararEm.has(atual)) {
+      // Não mata processos protegidos (daemon, painel, registrados no PM2).
+      break;
+    }
     visto.add(atual);
+    cadeia.push(atual);
 
     let ppid: number | null = null;
     try {
@@ -358,10 +376,53 @@ function ancestraisDoPid(pid: number): number[] {
     }
 
     atual = ppid;
-    cadeia.push(atual);
   }
 
   return cadeia;
+}
+
+// Conjunto de PIDs que o painel nunca deve matar.
+async function pidsProtegidos(): Promise<Set<number>> {
+  const protegidos = new Set<number>([process.pid]);
+
+  const daemon = pidDoDaemonPm2();
+  if (daemon) {
+    protegidos.add(daemon);
+  }
+
+  try {
+    const lista = await listarProcessos();
+    for (const processo of lista) {
+      if (typeof processo.pid === "number" && processo.pid > 1) {
+        protegidos.add(processo.pid);
+      }
+    }
+  } catch {
+    // Sem lista disponível; os demais protegidos já bastam.
+  }
+
+  return protegidos;
+}
+
+// PID do daemon do PM2, lido do arquivo que o próprio PM2 mantém
+// ($PM2_HOME/pm2.pid). Protege a cadeia de ancestrais de subir até o daemon.
+function pidDoDaemonPm2(): number | null {
+  try {
+    const caminho = path.join(
+      process.env.PM2_HOME || path.join(os.homedir(), ".pm2"),
+      "pm2.pid"
+    );
+    if (!fs.existsSync(caminho)) {
+      return null;
+    }
+    const pid = Number(fs.readFileSync(caminho, "utf8").trim());
+    if (!Number.isInteger(pid) || pid <= 1) {
+      return null;
+    }
+    return pid;
+  } catch {
+    return null;
+  }
 }
 
 // Retorna os PIDs dos processos escutando na porta via fuser/lsof.
