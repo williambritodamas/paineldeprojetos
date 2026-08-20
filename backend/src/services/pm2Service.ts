@@ -482,12 +482,45 @@ function escreverDumpVazio(): Promise<void> {
   });
 }
 
+// O pm2.dump grava o campo "cwd" de cada processo com o diretório de trabalho
+// do processo que acionou o dump (no caso, o próprio painel), em vez do cwd
+// real do processo. A restauração do boot (pm2 resurrect) usa esse campo, então
+// um dump "contaminado" faria os projetos subirem na pasta errada. Para
+// corrigir isso, reescrevemos o dump usando o env.PWD de cada processo, que
+// reflete o diretório real de trabalho.
+function corrigirCwdDoDump(): void {
+  try {
+    const caminho = caminhoDump();
+    if (!fs.existsSync(caminho)) {
+      return;
+    }
+
+    const dump = JSON.parse(fs.readFileSync(caminho, "utf8"));
+    let alterado = false;
+
+    for (const item of dump) {
+      const pwd = item?.env?.PWD;
+      if (typeof pwd === "string" && item.cwd !== pwd) {
+        item.cwd = pwd;
+        alterado = true;
+      }
+    }
+
+    if (alterado) {
+      fs.writeFileSync(caminho, JSON.stringify(dump, null, 2));
+    }
+  } catch {
+    // Correção é best-effort: não deve derrubar a operação original.
+  }
+}
+
 function salvarDump(): Promise<void> {
   return new Promise((resolver, rejeitar) => {
     // dump grava a lista de processos no dump.pm2 (persistência do boot),
     // equivalente ao comando "pm2 save".
     pm2.dump((erro) => {
       if (!erro) {
+        corrigirCwdDoDump();
         resolver();
         return;
       }
