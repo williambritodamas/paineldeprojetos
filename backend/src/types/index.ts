@@ -65,6 +65,7 @@ export interface CriarProjetoDTO {
   icon?: string | null;
   port: number;
   active: boolean;
+  environment?: string | null;
   folderPath?: string | null;
   script?: string;
   autostart?: boolean;
@@ -86,6 +87,11 @@ export interface CriarProjetoDTO {
 export interface AtualizarProjetoDTO extends Partial<CriarProjetoDTO> {}
 
 // Filtros utilizados na busca administrativa.
+export type AmbienteProjeto =
+  | "desenvolvimento"
+  | "homologacao"
+  | "producao";
+
 export type OrdenacaoProjeto =
   | "name_asc"
   | "name_desc"
@@ -100,6 +106,7 @@ export interface FiltroBuscaProjetos {
   busca?: string;
   status?: "todos" | "ativos" | "inativos";
   orderBy?: OrdenacaoProjeto;
+  environment?: AmbienteProjeto;
 }
 
 export type { Project, User };

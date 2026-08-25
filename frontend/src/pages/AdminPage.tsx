@@ -18,9 +18,16 @@ import EmptyState from "../components/EmptyState";
 import { useAuth } from "../hooks/AuthContext";
 import { useAdminProjects } from "../hooks/useAdminProjects";
 import * as projectService from "../services/projectService";
-import type { CriarProjetoDTO, Project, ProjectProcess } from "../types";
+import type { AmbienteProjeto, CriarProjetoDTO, Project, ProjectProcess } from "../types";
 
 type StatusFiltro = "todos" | "ativos" | "inativos";
+
+const opcoesAmbiente: Array<{ valor: AmbienteProjeto | ""; rotulo: string }> = [
+  { valor: "", rotulo: "Todos ambientes" },
+  { valor: "desenvolvimento", rotulo: "Desenvolvimento" },
+  { valor: "homologacao", rotulo: "Homologação" },
+  { valor: "producao", rotulo: "Produção" },
+];
 
 export default function AdminPage() {
   const { user, isAdmin, logout } = useAuth();
@@ -287,6 +294,25 @@ export default function AdminPage() {
                 {opcao.rotulo}
               </button>
             ))}
+
+            <select
+              value={filtro.environment || ""}
+              onChange={(e) =>
+                setFiltro((atual) => ({
+                  ...atual,
+                  environment: e.target.value
+                    ? (e.target.value as AmbienteProjeto)
+                    : undefined,
+                }))
+              }
+              className="campo-input"
+            >
+              {opcoesAmbiente.map((opcao) => (
+                <option key={opcao.valor} value={opcao.valor}>
+                  {opcao.rotulo}
+                </option>
+              ))}
+            </select>
 
             <SortSelector
               valor={filtro.orderBy}

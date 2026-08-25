@@ -8,7 +8,7 @@ import * as pm2Service from "../services/pm2Service";
 import { erroHttp, lerCorpo, sucessoHttp } from "../utils/helpers";
 import { validarProjeto } from "../utils/validators";
 import type { StatusProcesso } from "../services/pm2Service";
-import type { OrdenacaoProjeto } from "../types";
+import type { AmbienteProjeto, OrdenacaoProjeto } from "../types";
 import type { StatusPm2 } from "../types/respostas";
 
 // Monta o status PM2 de um processo a partir do mapa de status.
@@ -113,11 +113,16 @@ export async function listarAdministrativo(
       typeof req.query.orderBy === "string"
         ? (req.query.orderBy as OrdenacaoProjeto)
         : undefined;
+    const environmentParam =
+      typeof req.query.environment === "string"
+        ? (req.query.environment as AmbienteProjeto)
+        : undefined;
 
     const projetos = await projectService.listarProjetosComFiltro({
       busca: buscaParam,
       status: statusParam,
       orderBy: orderByParam,
+      environment: environmentParam,
     });
 
     // Status do PM2 é opcional: se o daemon estiver indisponível,
@@ -226,6 +231,12 @@ export async function criar(req: RequisicaoAutenticada, res: Response): Promise<
         corpo.icon !== undefined && corpo.icon !== null ? String(corpo.icon) : null,
       port: Number(corpo.port),
       active: Boolean(corpo.active),
+      environment:
+        typeof corpo.environment === "string"
+          ? corpo.environment
+          : corpo.environment === null
+            ? null
+            : undefined,
       folderPath:
         ehAdmin && typeof corpo.folderPath === "string"
           ? corpo.folderPath
@@ -330,6 +341,12 @@ export async function atualizar(req: RequisicaoAutenticada, res: Response): Prom
             : undefined,
       port: corpo.port !== undefined ? Number(corpo.port) : undefined,
       active: corpo.active !== undefined ? Boolean(corpo.active) : undefined,
+      environment:
+        corpo.environment !== undefined
+          ? typeof corpo.environment === "string"
+            ? corpo.environment
+            : null
+          : undefined,
       folderPath:
         ehAdmin && typeof corpo.folderPath === "string"
           ? corpo.folderPath

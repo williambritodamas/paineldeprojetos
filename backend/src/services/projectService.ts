@@ -18,6 +18,7 @@ function montarProjetoRetorno(projeto: {
   icon: string | null;
   port: number;
   active: boolean;
+  environment: string | null;
   createdAt: Date;
   updatedAt: Date;
 }): ProjetoRetorno {
@@ -28,6 +29,7 @@ function montarProjetoRetorno(projeto: {
     icon: projeto.icon,
     port: projeto.port,
     active: projeto.active,
+    environment: projeto.environment,
     createdAt: projeto.createdAt.toISOString(),
     updatedAt: projeto.updatedAt.toISOString(),
   };
@@ -40,6 +42,7 @@ function montarProjetoRetornoAdmin(projeto: {
   icon: string | null;
   port: number;
   active: boolean;
+  environment: string | null;
   folderPath: string | null;
   script: string;
   autostart: boolean;
@@ -129,7 +132,7 @@ export async function listarProjetosAtivos(): Promise<ProjetoRetorno[]> {
 export async function listarProjetosComFiltro(
   filtro: FiltroBuscaProjetos
 ): Promise<ProjetoRetornoAdmin[]> {
-  const { busca, status, orderBy } = filtro;
+  const { busca, status, orderBy, environment } = filtro;
 
   const condicoesBusca: Array<{ [campo: string]: unknown }> = [];
 
@@ -147,8 +150,8 @@ export async function listarProjetosComFiltro(
 
   // Prisma exige pelo menos uma condição no OR quando informado.
   const onde:
-    | { active?: boolean }
-    | { active?: boolean; OR: Array<{ [campo: string]: unknown }> } = condicoesBusca.length
+    | { active?: boolean; environment?: string }
+    | { active?: boolean; environment?: string; OR: Array<{ [campo: string]: unknown }> } = condicoesBusca.length
       ? { OR: condicoesBusca }
       : {};
 
@@ -156,6 +159,10 @@ export async function listarProjetosComFiltro(
     onde.active = true;
   } else if (status === "inativos") {
     onde.active = false;
+  }
+
+  if (environment) {
+    onde.environment = environment;
   }
 
   const projetos = await prisma.project.findMany({
@@ -203,6 +210,7 @@ export async function criarProjeto(
       icon: dados.icon?.trim() || null,
       port: dados.port,
       active: dados.active,
+      environment: dados.environment?.trim() || null,
       folderPath: dados.folderPath?.trim() || null,
       script: dados.script?.trim() || "npm start",
       autostart: dados.autostart ?? false,
@@ -249,6 +257,7 @@ export async function atualizarProjeto(
     icon?: string | null;
     port?: number;
     active?: boolean;
+    environment?: string | null;
     folderPath?: string | null;
     script?: string;
     autostart?: boolean;
@@ -288,6 +297,9 @@ export async function atualizarProjeto(
   }
   if (dados.active !== undefined) {
     dadosAtualizados.active = dados.active;
+  }
+  if (dados.environment !== undefined) {
+    dadosAtualizados.environment = dados.environment?.trim() || null;
   }
   if (dados.folderPath !== undefined) {
     dadosAtualizados.folderPath = dados.folderPath?.trim() || null;

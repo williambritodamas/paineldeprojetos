@@ -39,6 +39,7 @@ export default function ProjectForm({
   const [icone, setIcone] = useState(projeto?.icon ?? "");
   const [porta, setPorta] = useState(projeto?.port.toString() ?? "");
   const [ativo, setAtivo] = useState(projeto?.active ?? true);
+  const [ambiente, setAmbiente] = useState(projeto?.environment ?? "");
   const [caminhoPasta, setCaminhoPasta] = useState(
     projeto?.folderPath ?? ""
   );
@@ -121,6 +122,7 @@ export default function ProjectForm({
       icon: icone.trim(),
       port: portaNum,
       active: ativo,
+      environment: ambiente || null,
       ...(isAdmin
         ? {
             folderPath: caminhoPasta.trim(),
@@ -239,6 +241,23 @@ export default function ProjectForm({
           placeholder="Ex.: 3002"
           className="campo-input"
         />
+      </div>
+
+      <div>
+        <label htmlFor="ambiente" className="campo-label">
+          Ambiente
+        </label>
+        <select
+          id="ambiente"
+          value={ambiente}
+          onChange={(e) => setAmbiente(e.target.value)}
+          className="campo-input"
+        >
+          <option value="">Nenhum</option>
+          <option value="desenvolvimento">Desenvolvimento</option>
+          <option value="homologacao">Homologação</option>
+          <option value="producao">Produção</option>
+        </select>
       </div>
 
       {isAdmin && (

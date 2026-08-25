@@ -33,6 +33,7 @@ export interface Project {
   icon: string | null;
   port: number;
   active: boolean;
+  environment?: string | null;
   folderPath?: string | null;
   script?: string;
   autostart?: boolean;
@@ -76,6 +77,7 @@ export interface CriarProjetoDTO {
   icon?: string | null;
   port: number;
   active: boolean;
+  environment?: string | null;
   folderPath?: string | null;
   script?: string;
   autostart?: boolean;
@@ -116,6 +118,11 @@ export interface RespostaAutenticacao {
   user: User;
 }
 
+export type AmbienteProjeto =
+  | "desenvolvimento"
+  | "homologacao"
+  | "producao";
+
 export type OrdenacaoProjeto =
   | "name_asc"
   | "name_desc"
@@ -130,6 +137,7 @@ export interface FiltroProjeto {
   busca?: string;
   status?: "todos" | "ativos" | "inativos";
   orderBy?: OrdenacaoProjeto;
+  environment?: AmbienteProjeto;
 }
 
 export interface ConfigRodape {

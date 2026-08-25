@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import type { Project, ProjectProcess } from "../types";
 import { gerarUrlProjeto } from "../utils/projectUrl";
+import EnvironmentBadge from "./EnvironmentBadge";
 import ProjectIcon from "./ProjectIcon";
 import StatusBadge from "./StatusBadge";
 
@@ -124,7 +125,10 @@ export default function AdminProjectCard({
         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-base-700">
           <ProjectIcon icon={project.icon} className="h-6 w-6" />
         </div>
-        <StatusBadge active={project.active} />
+        <div className="flex items-center gap-2">
+          <EnvironmentBadge environment={project.environment} />
+          <StatusBadge active={project.active} />
+        </div>
       </div>
 
       <div className="flex-1 space-y-1">

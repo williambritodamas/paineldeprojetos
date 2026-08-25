@@ -17,6 +17,7 @@ export interface ProjetoRetorno {
   icon: string | null;
   port: number;
   active: boolean;
+  environment: string | null;
   createdAt: string;
   updatedAt: string;
 }
