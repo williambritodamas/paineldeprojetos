@@ -7,6 +7,7 @@ import type {
   AtualizarProjetoDTO,
   CriarProjetoDTO,
   FiltroBuscaProjetos,
+  OrdenacaoProjeto,
 } from "../types";
 import type { ProjetoRetorno, ProjetoRetornoAdmin } from "../types/respostas";
 
@@ -91,6 +92,30 @@ function montarProjetoRetornoAdmin(projeto: {
   };
 }
 
+// Mapeia o valor de ordenação para o objeto do Prisma.
+function montarOrderBy(orderBy?: OrdenacaoProjeto) {
+  switch (orderBy) {
+    case "name_asc":
+      return { name: "asc" as const };
+    case "name_desc":
+      return { name: "desc" as const };
+    case "port_asc":
+      return { port: "asc" as const };
+    case "port_desc":
+      return { port: "desc" as const };
+    case "createdAt_asc":
+      return { createdAt: "asc" as const };
+    case "createdAt_desc":
+      return { createdAt: "desc" as const };
+    case "updatedAt_asc":
+      return { updatedAt: "asc" as const };
+    case "updatedAt_desc":
+      return { updatedAt: "desc" as const };
+    default:
+      return { name: "asc" as const };
+  }
+}
+
 // Lista projetos ativos para a tela pública.
 export async function listarProjetosAtivos(): Promise<ProjetoRetorno[]> {
   const projetos = await prisma.project.findMany({
@@ -104,7 +129,7 @@ export async function listarProjetosAtivos(): Promise<ProjetoRetorno[]> {
 export async function listarProjetosComFiltro(
   filtro: FiltroBuscaProjetos
 ): Promise<ProjetoRetornoAdmin[]> {
-  const { busca, status } = filtro;
+  const { busca, status, orderBy } = filtro;
 
   const condicoesBusca: Array<{ [campo: string]: unknown }> = [];
 
@@ -135,7 +160,7 @@ export async function listarProjetosComFiltro(
 
   const projetos = await prisma.project.findMany({
     where: onde,
-    orderBy: { name: "asc" },
+    orderBy: montarOrderBy(orderBy),
     include: { processes: { orderBy: { label: "asc" } } },
   });
 

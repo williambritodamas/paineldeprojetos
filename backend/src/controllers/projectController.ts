@@ -8,6 +8,7 @@ import * as pm2Service from "../services/pm2Service";
 import { erroHttp, lerCorpo, sucessoHttp } from "../utils/helpers";
 import { validarProjeto } from "../utils/validators";
 import type { StatusProcesso } from "../services/pm2Service";
+import type { OrdenacaoProjeto } from "../types";
 import type { StatusPm2 } from "../types/respostas";
 
 // Monta o status PM2 de um processo a partir do mapa de status.
@@ -108,10 +109,15 @@ export async function listarAdministrativo(
       typeof req.query.status === "string"
         ? (req.query.status as "todos" | "ativos" | "inativos")
         : "todos";
+    const orderByParam =
+      typeof req.query.orderBy === "string"
+        ? (req.query.orderBy as OrdenacaoProjeto)
+        : undefined;
 
     const projetos = await projectService.listarProjetosComFiltro({
       busca: buscaParam,
       status: statusParam,
+      orderBy: orderByParam,
     });
 
     // Status do PM2 é opcional: se o daemon estiver indisponível,

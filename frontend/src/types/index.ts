@@ -116,9 +116,20 @@ export interface RespostaAutenticacao {
   user: User;
 }
 
+export type OrdenacaoProjeto =
+  | "name_asc"
+  | "name_desc"
+  | "port_asc"
+  | "port_desc"
+  | "createdAt_asc"
+  | "createdAt_desc"
+  | "updatedAt_asc"
+  | "updatedAt_desc";
+
 export interface FiltroProjeto {
   busca?: string;
   status?: "todos" | "ativos" | "inativos";
+  orderBy?: OrdenacaoProjeto;
 }
 
 export interface ConfigRodape {

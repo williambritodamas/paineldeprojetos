@@ -86,9 +86,20 @@ export interface CriarProjetoDTO {
 export interface AtualizarProjetoDTO extends Partial<CriarProjetoDTO> {}
 
 // Filtros utilizados na busca administrativa.
+export type OrdenacaoProjeto =
+  | "name_asc"
+  | "name_desc"
+  | "port_asc"
+  | "port_desc"
+  | "createdAt_asc"
+  | "createdAt_desc"
+  | "updatedAt_asc"
+  | "updatedAt_desc";
+
 export interface FiltroBuscaProjetos {
   busca?: string;
   status?: "todos" | "ativos" | "inativos";
+  orderBy?: OrdenacaoProjeto;
 }
 
 export type { Project, User };

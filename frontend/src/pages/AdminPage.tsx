@@ -7,6 +7,7 @@ import { LogOut, Plus, Users } from "lucide-react";
 import Header from "../components/Header";
 import StatsCard from "../components/StatsCard";
 import SearchBar from "../components/SearchBar";
+import SortSelector from "../components/SortSelector";
 import AdminProjectCard from "../components/AdminProjectCard";
 import ProjectForm from "../components/ProjectForm";
 import ProjectGrid from "../components/ProjectGrid";
@@ -262,14 +263,14 @@ export default function AdminPage() {
           />
         </section>
 
-        {/* Ferramentas de busca e filtro */}
+        {/* Ferramentas de busca, filtro e ordenação */}
         <section className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <SearchBar
             valor={filtro.busca || ""}
             aoMudar={(busca) => setFiltro((atual) => ({ ...atual, busca }))}
           />
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {opcoesFiltro.map((opcao) => (
               <button
                 key={opcao.valor}
@@ -286,6 +287,13 @@ export default function AdminPage() {
                 {opcao.rotulo}
               </button>
             ))}
+
+            <SortSelector
+              valor={filtro.orderBy}
+              aoMudar={(orderBy) =>
+                setFiltro((atual) => ({ ...atual, orderBy }))
+              }
+            />
           </div>
         </section>
 
