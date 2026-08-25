@@ -9,6 +9,7 @@ import StatsCard from "../components/StatsCard";
 import SearchBar from "../components/SearchBar";
 import AdminProjectCard from "../components/AdminProjectCard";
 import ProjectForm from "../components/ProjectForm";
+import ProjectGrid from "../components/ProjectGrid";
 import ProjectModal from "../components/ProjectModal";
 import ConfirmDialog from "../components/ConfirmDialog";
 import Loading from "../components/Loading";
@@ -296,7 +297,7 @@ export default function AdminPage() {
         ) : projetos.length === 0 ? (
           <EmptyState mensagem="Nenhum projeto encontrado." />
         ) : (
-          <section className="space-y-4">
+          <ProjectGrid>
             {projetos.map((projeto) => (
               <AdminProjectCard
                 key={projeto.id}
@@ -315,7 +316,7 @@ export default function AdminPage() {
                 aoPararProcesso={aoPararProcesso}
               />
             ))}
-          </section>
+          </ProjectGrid>
         )}
       </main>
 

@@ -1,17 +1,15 @@
-// Card de projeto na área administrativa.
+// Card de projeto na área administrativa (layout vertical compacto).
 // Inclui ações de edição, exclusão, ativar/desativar e,
 // para administradores, o gerenciamento via PM2.
 
 import {
   ExternalLink,
-  Folder,
+  LifeBuoy,
   Pencil,
   Play,
   Power,
   RotateCcw,
   Square,
-  Tag,
-  Terminal,
   Trash2,
 } from "lucide-react";
 import type { Project, ProjectProcess } from "../types";
@@ -121,57 +119,40 @@ export default function AdminProjectCard({
   const nomeProcesso = project.pm2Name?.trim() || `proj-${project.id}`;
 
   return (
-    <article className="card-padrao space-y-4 p-5">
-      <div className="flex gap-5">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-base-700">
+    <article className="card-padrao flex flex-col gap-4 p-6 transition hover:border-sky-500/40">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-base-700">
           <ProjectIcon icon={project.icon} className="h-6 w-6" />
         </div>
+        <StatusBadge active={project.active} />
+      </div>
 
-        <div className="min-w-0 flex-1 space-y-1.5">
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-base font-semibold text-white">{project.name}</h3>
-            <StatusBadge active={project.active} />
-          </div>
+      <div className="flex-1 space-y-1">
+        <h3 className="text-base font-semibold text-white">{project.name}</h3>
+        <p className="text-sm text-slate-400">
+          {project.description || "Sem descrição."}
+        </p>
+      </div>
 
-          <p className="truncate text-sm text-slate-400">
-            {project.description || "Sem descrição."}
-          </p>
+      <div className="space-y-3">
+        <p className="inline-flex items-center gap-1.5 rounded-lg bg-base-700 px-2.5 py-1 text-xs text-slate-300">
+          <LifeBuoy className="h-3.5 w-3.5 text-sky-400" />
+          Porta: {project.port}
+        </p>
 
-          <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400">
-            <span>
-              Porta:{" "}
-              <strong className="font-medium text-slate-300">
-                {project.port}
-              </strong>
-            </span>
-            <a
-              href={urlProjeto}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-sky-400 transition hover:text-sky-300"
-            >
-              <ExternalLink className="h-3.5 w-3.5" />
-              Acessar
-            </a>
-          </div>
+        <a
+          href={urlProjeto}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="botao-primario w-full"
+        >
+          <ExternalLink className="h-4 w-4" />
+          Acessar
+        </a>
+      </div>
 
-          {isAdmin && (
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
-              <span className="inline-flex min-w-0 max-w-full items-center gap-1.5">
-                <Folder className="h-3.5 w-3.5 shrink-0" />
-                <span className="truncate">
-                  {project.folderPath || "Pasta não configurada"}
-                </span>
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <Terminal className="h-3.5 w-3.5 shrink-0" />
-                {project.script || "npm start"}
-              </span>
-            </div>
-          )}
-        </div>
-
-        <div className="flex shrink-0 flex-col items-end gap-2 sm:flex-row sm:items-start">
+      <div className="flex items-center justify-between border-t border-base-600 pt-3">
+        <div className="flex gap-2">
           <button
             type="button"
             onClick={() => aoAlternar(project)}
@@ -226,7 +207,6 @@ export default function AdminProjectCard({
             )}
 
             <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
-              <Tag className="h-3.5 w-3.5" />
               {nomeProcesso}
             </span>
 
