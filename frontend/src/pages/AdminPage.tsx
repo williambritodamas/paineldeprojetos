@@ -16,6 +16,7 @@ import ConfirmDialog from "../components/ConfirmDialog";
 import Loading from "../components/Loading";
 import EmptyState from "../components/EmptyState";
 import { useAuth } from "../hooks/AuthContext";
+import { useCategories } from "../hooks/useCategories";
 import { useAdminProjects } from "../hooks/useAdminProjects";
 import * as projectService from "../services/projectService";
 import type { AmbienteProjeto, CriarProjetoDTO, Project, ProjectProcess } from "../types";
@@ -33,6 +34,7 @@ export default function AdminPage() {
   const { user, isAdmin, logout } = useAuth();
   const navigate = useNavigate();
 
+  const { categorias } = useCategories();
   const { projetos, carregando, erro, filtro, setFiltro, recarregar } =
     useAdminProjects();
 
@@ -310,6 +312,26 @@ export default function AdminPage() {
               {opcoesAmbiente.map((opcao) => (
                 <option key={opcao.valor} value={opcao.valor}>
                   {opcao.rotulo}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={filtro.categoryId || ""}
+              onChange={(e) =>
+                setFiltro((atual) => ({
+                  ...atual,
+                  categoryId: e.target.value
+                    ? Number(e.target.value)
+                    : undefined,
+                }))
+              }
+              className="campo-input"
+            >
+              <option value="">Todas categorias</option>
+              {categorias.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
                 </option>
               ))}
             </select>

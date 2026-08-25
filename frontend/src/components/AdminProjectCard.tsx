@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import type { Project, ProjectProcess } from "../types";
 import { gerarUrlProjeto } from "../utils/projectUrl";
+import CategoryBadge from "./CategoryBadge";
 import EnvironmentBadge from "./EnvironmentBadge";
 import ProjectIcon from "./ProjectIcon";
 import StatusBadge from "./StatusBadge";
@@ -126,6 +127,7 @@ export default function AdminProjectCard({
           <ProjectIcon icon={project.icon} className="h-6 w-6" />
         </div>
         <div className="flex items-center gap-2">
+          <CategoryBadge category={project.category} />
           <EnvironmentBadge environment={project.environment} />
           <StatusBadge active={project.active} />
         </div>

@@ -3,6 +3,7 @@
 import { Plus, Trash2 } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { ICONES_DISPONIVEIS } from "../constants/projectIcons";
+import { useCategories } from "../hooks/useCategories";
 import type { CriarProjetoDTO, Project } from "../types";
 import ProjectIcon from "./ProjectIcon";
 
@@ -34,12 +35,16 @@ export default function ProjectForm({
   aoCancelar,
   salvando,
 }: Props) {
+  const { categorias } = useCategories();
   const [nome, setNome] = useState(projeto?.name ?? "");
   const [descricao, setDescricao] = useState(projeto?.description ?? "");
   const [icone, setIcone] = useState(projeto?.icon ?? "");
   const [porta, setPorta] = useState(projeto?.port.toString() ?? "");
   const [ativo, setAtivo] = useState(projeto?.active ?? true);
   const [ambiente, setAmbiente] = useState(projeto?.environment ?? "");
+  const [categoriaId, setCategoriaId] = useState(
+    projeto?.categoryId?.toString() ?? ""
+  );
   const [caminhoPasta, setCaminhoPasta] = useState(
     projeto?.folderPath ?? ""
   );
@@ -123,6 +128,7 @@ export default function ProjectForm({
       port: portaNum,
       active: ativo,
       environment: ambiente || null,
+      categoryId: categoriaId ? Number(categoriaId) : null,
       ...(isAdmin
         ? {
             folderPath: caminhoPasta.trim(),
@@ -257,6 +263,25 @@ export default function ProjectForm({
           <option value="desenvolvimento">Desenvolvimento</option>
           <option value="homologacao">Homologação</option>
           <option value="producao">Produção</option>
+        </select>
+      </div>
+
+      <div>
+        <label htmlFor="categoria" className="campo-label">
+          Categoria
+        </label>
+        <select
+          id="categoria"
+          value={categoriaId}
+          onChange={(e) => setCategoriaId(e.target.value)}
+          className="campo-input"
+        >
+          <option value="">Nenhuma</option>
+          {categorias.map((cat) => (
+            <option key={cat.id} value={cat.id}>
+              {cat.name}
+            </option>
+          ))}
         </select>
       </div>
 

@@ -52,6 +52,9 @@ model Project {
   maxRestarts    Int      @default(10)
   // Limite de memória que dispara reinício quando estourado (ex.: "512M").
   maxMemoryRestart String?
+  // Categoria do projeto (opcional).
+  categoryId     Int?
+  category       Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   // Processos adicionais executados junto com o projeto (ex.: backend).
   processes   ProjectProcess[]
   createdAt   DateTime @default(now())
@@ -59,7 +62,7 @@ model Project {
 }
 
 // Processo adicional de um projeto.
-// Cada processo roda numa pasta e porta próprias e é gerenciado pelo PM2
+// Cada processo roda numa porta e pasta próprias e é gerenciado pelo PM2
 // junto com o processo principal do projeto.
 model ProjectProcess {
   id         Int      @id @default(autoincrement())
@@ -85,4 +88,15 @@ model ProjectProcess {
   maxMemoryRestart String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+}
+
+// Categoria do projeto (ex.: Educação, Audiovisual, Sistemas).
+model Category {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  // Relação: uma categoria pode ter vários projetos.
+  projects  Project[]
 }

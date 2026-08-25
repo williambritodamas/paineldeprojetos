@@ -26,6 +26,15 @@ export interface ProjectProcess {
   pm2UptimeMs?: number | null;
 }
 
+export interface Category {
+  id: number;
+  name: string;
+  slug: string;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { projects: number };
+}
+
 export interface Project {
   id: number;
   name: string;
@@ -34,6 +43,8 @@ export interface Project {
   port: number;
   active: boolean;
   environment?: string | null;
+  categoryId?: number | null;
+  category?: Category | null;
   folderPath?: string | null;
   script?: string;
   autostart?: boolean;
@@ -78,6 +89,7 @@ export interface CriarProjetoDTO {
   port: number;
   active: boolean;
   environment?: string | null;
+  categoryId?: number | null;
   folderPath?: string | null;
   script?: string;
   autostart?: boolean;
@@ -138,6 +150,7 @@ export interface FiltroProjeto {
   status?: "todos" | "ativos" | "inativos";
   orderBy?: OrdenacaoProjeto;
   environment?: AmbienteProjeto;
+  categoryId?: number;
 }
 
 export interface ConfigRodape {

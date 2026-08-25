@@ -66,6 +66,7 @@ export interface CriarProjetoDTO {
   port: number;
   active: boolean;
   environment?: string | null;
+  categoryId?: number | null;
   folderPath?: string | null;
   script?: string;
   autostart?: boolean;
@@ -85,6 +86,18 @@ export interface CriarProjetoDTO {
 
 // Dados utilizados para atualizar um projeto.
 export interface AtualizarProjetoDTO extends Partial<CriarProjetoDTO> {}
+
+// Dados utilizados para criar uma categoria.
+export interface CriarCategoriaDTO {
+  name: string;
+  slug?: string;
+}
+
+// Dados utilizados para atualizar uma categoria.
+export interface AtualizarCategoriaDTO {
+  name?: string;
+  slug?: string;
+}
 
 // Filtros utilizados na busca administrativa.
 export type AmbienteProjeto =
@@ -107,6 +120,7 @@ export interface FiltroBuscaProjetos {
   status?: "todos" | "ativos" | "inativos";
   orderBy?: OrdenacaoProjeto;
   environment?: AmbienteProjeto;
+  categoryId?: number;
 }
 
 export type { Project, User };

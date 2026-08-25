@@ -10,6 +10,15 @@ export type StatusPm2 =
   | "nao_registrado"
   | "indisponivel";
 
+export interface CategoriaRetorno {
+  id: number;
+  name: string;
+  slug: string;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { projects: number };
+}
+
 export interface ProjetoRetorno {
   id: number;
   name: string;
@@ -18,6 +27,8 @@ export interface ProjetoRetorno {
   port: number;
   active: boolean;
   environment: string | null;
+  categoryId: number | null;
+  category: CategoriaRetorno | null;
   createdAt: string;
   updatedAt: string;
 }

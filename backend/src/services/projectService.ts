@@ -11,6 +11,22 @@ import type {
 } from "../types";
 import type { ProjetoRetorno, ProjetoRetornoAdmin } from "../types/respostas";
 
+function montarCategoriaRetorno(categoria: {
+  id: number;
+  name: string;
+  slug: string;
+  createdAt: Date;
+  updatedAt: Date;
+}) {
+  return {
+    id: categoria.id,
+    name: categoria.name,
+    slug: categoria.slug,
+    createdAt: categoria.createdAt.toISOString(),
+    updatedAt: categoria.updatedAt.toISOString(),
+  };
+}
+
 function montarProjetoRetorno(projeto: {
   id: number;
   name: string;
@@ -19,6 +35,8 @@ function montarProjetoRetorno(projeto: {
   port: number;
   active: boolean;
   environment: string | null;
+  categoryId: number | null;
+  category: { id: number; name: string; slug: string; createdAt: Date; updatedAt: Date } | null;
   createdAt: Date;
   updatedAt: Date;
 }): ProjetoRetorno {
@@ -30,6 +48,8 @@ function montarProjetoRetorno(projeto: {
     port: projeto.port,
     active: projeto.active,
     environment: projeto.environment,
+    categoryId: projeto.categoryId,
+    category: projeto.category ? montarCategoriaRetorno(projeto.category) : null,
     createdAt: projeto.createdAt.toISOString(),
     updatedAt: projeto.updatedAt.toISOString(),
   };
@@ -43,6 +63,8 @@ function montarProjetoRetornoAdmin(projeto: {
   port: number;
   active: boolean;
   environment: string | null;
+  categoryId: number | null;
+  category: { id: number; name: string; slug: string; createdAt: Date; updatedAt: Date } | null;
   folderPath: string | null;
   script: string;
   autostart: boolean;
@@ -124,6 +146,7 @@ export async function listarProjetosAtivos(): Promise<ProjetoRetorno[]> {
   const projetos = await prisma.project.findMany({
     where: { active: true },
     orderBy: { name: "asc" },
+    include: { category: true },
   });
   return projetos.map(montarProjetoRetorno);
 }
@@ -132,7 +155,7 @@ export async function listarProjetosAtivos(): Promise<ProjetoRetorno[]> {
 export async function listarProjetosComFiltro(
   filtro: FiltroBuscaProjetos
 ): Promise<ProjetoRetornoAdmin[]> {
-  const { busca, status, orderBy, environment } = filtro;
+  const { busca, status, orderBy, environment, categoryId } = filtro;
 
   const condicoesBusca: Array<{ [campo: string]: unknown }> = [];
 
@@ -150,8 +173,8 @@ export async function listarProjetosComFiltro(
 
   // Prisma exige pelo menos uma condição no OR quando informado.
   const onde:
-    | { active?: boolean; environment?: string }
-    | { active?: boolean; environment?: string; OR: Array<{ [campo: string]: unknown }> } = condicoesBusca.length
+    | { active?: boolean; environment?: string; categoryId?: number }
+    | { active?: boolean; environment?: string; categoryId?: number; OR: Array<{ [campo: string]: unknown }> } = condicoesBusca.length
       ? { OR: condicoesBusca }
       : {};
 
@@ -165,10 +188,14 @@ export async function listarProjetosComFiltro(
     onde.environment = environment;
   }
 
+  if (categoryId) {
+    onde.categoryId = categoryId;
+  }
+
   const projetos = await prisma.project.findMany({
     where: onde,
     orderBy: montarOrderBy(orderBy),
-    include: { processes: { orderBy: { label: "asc" } } },
+    include: { processes: { orderBy: { label: "asc" } }, category: true },
   });
 
   return projetos.map(montarProjetoRetornoAdmin);
@@ -176,7 +203,10 @@ export async function listarProjetosComFiltro(
 
 // Retorna um projeto específico (público, sem dados de execução).
 export async function obterProjeto(id: number): Promise<ProjetoRetorno | null> {
-  const projeto = await prisma.project.findUnique({ where: { id } });
+  const projeto = await prisma.project.findUnique({
+    where: { id },
+    include: { category: true },
+  });
   return projeto ? montarProjetoRetorno(projeto) : null;
 }
 
@@ -186,7 +216,7 @@ export async function obterProjetoAdmin(
 ): Promise<ProjetoRetornoAdmin | null> {
   const projeto = await prisma.project.findUnique({
     where: { id },
-    include: { processes: { orderBy: { label: "asc" } } },
+    include: { processes: { orderBy: { label: "asc" } }, category: true },
   });
   return projeto ? montarProjetoRetornoAdmin(projeto) : null;
 }
@@ -211,6 +241,7 @@ export async function criarProjeto(
       port: dados.port,
       active: dados.active,
       environment: dados.environment?.trim() || null,
+      categoryId: dados.categoryId ?? null,
       folderPath: dados.folderPath?.trim() || null,
       script: dados.script?.trim() || "npm start",
       autostart: dados.autostart ?? false,
@@ -234,7 +265,7 @@ export async function criarProjeto(
         })),
       },
     },
-    include: { processes: true },
+    include: { processes: true, category: true },
   });
   return montarProjetoRetornoAdmin(projeto);
 }
@@ -258,6 +289,7 @@ export async function atualizarProjeto(
     port?: number;
     active?: boolean;
     environment?: string | null;
+    categoryId?: number | null;
     folderPath?: string | null;
     script?: string;
     autostart?: boolean;
@@ -300,6 +332,9 @@ export async function atualizarProjeto(
   }
   if (dados.environment !== undefined) {
     dadosAtualizados.environment = dados.environment?.trim() || null;
+  }
+  if (dados.categoryId !== undefined) {
+    dadosAtualizados.categoryId = dados.categoryId ?? null;
   }
   if (dados.folderPath !== undefined) {
     dadosAtualizados.folderPath = dados.folderPath?.trim() || null;
@@ -351,7 +386,7 @@ export async function atualizarProjeto(
   const projeto = await prisma.project.update({
     where: { id },
     data: dadosAtualizados,
-    include: { processes: { orderBy: { label: "asc" } } },
+    include: { processes: { orderBy: { label: "asc" } }, category: true },
   });
 
   return montarProjetoRetornoAdmin(projeto);

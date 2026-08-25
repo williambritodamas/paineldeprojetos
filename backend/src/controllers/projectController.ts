@@ -117,12 +117,17 @@ export async function listarAdministrativo(
       typeof req.query.environment === "string"
         ? (req.query.environment as AmbienteProjeto)
         : undefined;
+    const categoryIdParam =
+      typeof req.query.categoryId === "string" && !isNaN(Number(req.query.categoryId))
+        ? Number(req.query.categoryId)
+        : undefined;
 
     const projetos = await projectService.listarProjetosComFiltro({
       busca: buscaParam,
       status: statusParam,
       orderBy: orderByParam,
       environment: environmentParam,
+      categoryId: categoryIdParam,
     });
 
     // Status do PM2 é opcional: se o daemon estiver indisponível,
@@ -237,6 +242,12 @@ export async function criar(req: RequisicaoAutenticada, res: Response): Promise<
           : corpo.environment === null
             ? null
             : undefined,
+      categoryId:
+        typeof corpo.categoryId === "number"
+          ? corpo.categoryId
+          : corpo.categoryId === null
+            ? null
+            : undefined,
       folderPath:
         ehAdmin && typeof corpo.folderPath === "string"
           ? corpo.folderPath
@@ -345,6 +356,12 @@ export async function atualizar(req: RequisicaoAutenticada, res: Response): Prom
         corpo.environment !== undefined
           ? typeof corpo.environment === "string"
             ? corpo.environment
+            : null
+          : undefined,
+      categoryId:
+        corpo.categoryId !== undefined
+          ? typeof corpo.categoryId === "number"
+            ? corpo.categoryId
             : null
           : undefined,
       folderPath:
