@@ -13,7 +13,9 @@ A aplicação funciona como um **launchpad central**: a página pública visuali
 - associar projetos a **servidores** (Local, Escola, Cloud, etc.);
 - marcar projetos como **favoritos** para acesso rápido;
 - **ordenar** projetos por nome, porta ou data de criação/atualização;
-- **monitorar portas** dos projetos em tempo real (status online/offline com latência).
+- **monitorar portas** dos projetos em tempo real (status online/offline com latência);
+- **monitorar atualizações git** com indicador de severidade (4 níveis);
+- **atualizar código via git pull** com modal de opções (npm install, prisma migrate, npm build).
 
 ---
 
@@ -383,6 +385,23 @@ Verificação em tempo real do status das portas:
 - Polling automático a cada 30 segundos;
 - Endpoint público para verificação: `/api/health/ports`.
 
+### Atualização Git com Modal
+
+O painel monitora automaticamente atualizações nos repositórios git dos projetos:
+
+- Verificação periódica via `git fetch` (polling a cada 60 segundos);
+- Indicador de severidade com 4 níveis: verde (atualizado), âmbar (atualizações disponíveis, até 10 commits), vermelho (crítico, mais de 10 commits), roxo pulsante (urgente, mais de 3 dias desatualizado);
+- Exibição de commits atrás e dias desde a última atualização.
+
+Ao clicar no botão de atualização, um **modal** oferece opções de comandos pós-pull:
+
+- **Git pull** (sempre habilitado) — atualiza o código do repositório remoto;
+- **npm install** — instala/atualiza dependências;
+- **npx prisma migrate dev** — aplica mudanças no banco de dados;
+- **npm run build** — compila o projeto para produção.
+
+Os comandos são executados sequencialmente. Se algum falhar, a execução para e o resultado de cada passo é exibido no modal.
+
 ---
 
 ## Papéis de usuário
@@ -503,6 +522,9 @@ Regras de segurança:
 | POST   | `/api/admin/pm2/processos/:processId/iniciar`   | Admin | Inicia um processo adicional     |
 | POST   | `/api/admin/pm2/processos/:processId/reiniciar` | Admin | Reinicia um processo adicional   |
 | POST   | `/api/admin/pm2/processos/:processId/parar`     | Admin | Para um processo adicional       |
+| GET    | `/api/admin/git/updates`                | Admin         | Verifica atualizações git de todos os projetos |
+| GET    | `/api/admin/git/:id/updates`            | Admin         | Verifica atualizações git de um projeto |
+| POST   | `/api/admin/git/:id/pull`               | Admin         | Executa git pull + comandos pós-pull (npm install, prisma migrate, npm build) |
 
 ### Exemplo de health check
 
