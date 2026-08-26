@@ -370,95 +370,99 @@ export default function AdminPage() {
         </section>
 
         {/* Ferramentas de busca, filtro e ordenação */}
-        <section className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <section className="space-y-3">
           <SearchBar
             valor={filtro.busca || ""}
             aoMudar={(busca) => setFiltro((atual) => ({ ...atual, busca }))}
           />
 
-          <div className="flex flex-wrap items-center gap-2">
-            {opcoesFiltro.map((opcao) => (
-              <button
-                key={opcao.valor}
-                type="button"
-                onClick={() =>
-                  setFiltro((atual) => ({ ...atual, status: opcao.valor }))
-                }
-                className={
-                  filtro.status === opcao.valor
-                    ? "inline-flex items-center rounded-lg bg-sky-500 px-3 py-2 text-sm font-medium text-white transition"
-                    : "inline-flex items-center rounded-lg border border-base-600 bg-base-700 px-3 py-2 text-sm font-medium text-slate-300 transition hover:border-base-500"
-                }
-              >
-                {opcao.rotulo}
-              </button>
-            ))}
-
-            <select
-              value={filtro.environment || ""}
-              onChange={(e) =>
-                setFiltro((atual) => ({
-                  ...atual,
-                  environment: e.target.value
-                    ? (e.target.value as AmbienteProjeto)
-                    : undefined,
-                }))
-              }
-              className="campo-input"
-            >
-              {opcoesAmbiente.map((opcao) => (
-                <option key={opcao.valor} value={opcao.valor}>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap items-center gap-2">
+              {opcoesFiltro.map((opcao) => (
+                <button
+                  key={opcao.valor}
+                  type="button"
+                  onClick={() =>
+                    setFiltro((atual) => ({ ...atual, status: opcao.valor }))
+                  }
+                  className={
+                    filtro.status === opcao.valor
+                      ? "inline-flex items-center rounded-lg bg-sky-500 px-3 py-2 text-sm font-medium text-white transition"
+                      : "inline-flex items-center rounded-lg border border-base-600 bg-base-700 px-3 py-2 text-sm font-medium text-slate-300 transition hover:border-base-500"
+                  }
+                >
                   {opcao.rotulo}
-                </option>
+                </button>
               ))}
-            </select>
+            </div>
 
-            <select
-              value={filtro.categoryId || ""}
-              onChange={(e) =>
-                setFiltro((atual) => ({
-                  ...atual,
-                  categoryId: e.target.value
-                    ? Number(e.target.value)
-                    : undefined,
-                }))
-              }
-              className="campo-input"
-            >
-              <option value="">Todas categorias</option>
-              {categorias.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                value={filtro.environment || ""}
+                onChange={(e) =>
+                  setFiltro((atual) => ({
+                    ...atual,
+                    environment: e.target.value
+                      ? (e.target.value as AmbienteProjeto)
+                      : undefined,
+                  }))
+                }
+                className="campo-input w-auto"
+              >
+                {opcoesAmbiente.map((opcao) => (
+                  <option key={opcao.valor} value={opcao.valor}>
+                    {opcao.rotulo}
+                  </option>
+                ))}
+              </select>
 
-            <select
-              value={filtro.serverId || ""}
-              onChange={(e) =>
-                setFiltro((atual) => ({
-                  ...atual,
-                  serverId: e.target.value
-                    ? Number(e.target.value)
-                    : undefined,
-                }))
-              }
-              className="campo-input"
-            >
-              <option value="">Todos servidores</option>
-              {servidores.map((srv) => (
-                <option key={srv.id} value={srv.id}>
-                  {srv.name}
-                </option>
-              ))}
-            </select>
+              <select
+                value={filtro.categoryId || ""}
+                onChange={(e) =>
+                  setFiltro((atual) => ({
+                    ...atual,
+                    categoryId: e.target.value
+                      ? Number(e.target.value)
+                      : undefined,
+                  }))
+                }
+                className="campo-input w-auto"
+              >
+                <option value="">Todas categorias</option>
+                {categorias.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
 
-            <SortSelector
-              valor={filtro.orderBy}
-              aoMudar={(orderBy) =>
-                setFiltro((atual) => ({ ...atual, orderBy }))
-              }
-            />
+              <select
+                value={filtro.serverId || ""}
+                onChange={(e) =>
+                  setFiltro((atual) => ({
+                    ...atual,
+                    serverId: e.target.value
+                      ? Number(e.target.value)
+                      : undefined,
+                  }))
+                }
+                className="campo-input w-auto"
+              >
+                <option value="">Todos servidores</option>
+                {servidores.map((srv) => (
+                  <option key={srv.id} value={srv.id}>
+                    {srv.name}
+                  </option>
+                ))}
+              </select>
+
+              <SortSelector
+                valor={filtro.orderBy}
+                aoMudar={(orderBy) =>
+                  setFiltro((atual) => ({ ...atual, orderBy }))
+                }
+              />
+            </div>
           </div>
         </section>
 
