@@ -19,6 +19,7 @@ import { useAuth } from "../hooks/AuthContext";
 import { useCategories } from "../hooks/useCategories";
 import { useServers } from "../hooks/useServers";
 import { useFavorites } from "../hooks/useFavorites";
+import { usePortMonitor } from "../hooks/usePortMonitor";
 import { useAdminProjects } from "../hooks/useAdminProjects";
 import * as projectService from "../services/projectService";
 import type { AmbienteProjeto, CriarProjetoDTO, Project, ProjectProcess } from "../types";
@@ -39,6 +40,7 @@ export default function AdminPage() {
   const { categorias } = useCategories();
   const { servidores } = useServers();
   const { toggleFavorito, isFavorito } = useFavorites();
+  const { getStatusProjeto } = usePortMonitor({ intervalMs: 30000 });
   const { projetos, carregando, erro, filtro, setFiltro, recarregar } =
     useAdminProjects();
 
@@ -386,6 +388,7 @@ export default function AdminPage() {
                 isAdmin={isAdmin}
                 pm2Ocupado={acaoPm2?.id === projeto.id}
                 favorito={isFavorito(projeto.id)}
+                portStatus={getStatusProjeto(projeto.id)}
                 aoEditar={abrirEdicao}
                 aoExcluir={(p) => setExcluindo(p)}
                 aoAlternar={aoAlternarStatus}

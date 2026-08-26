@@ -14,9 +14,11 @@ import {
   Trash2,
 } from "lucide-react";
 import type { Project, ProjectProcess } from "../types";
+import type { StatusPorta } from "../services/healthService";
 import { gerarUrlProjeto } from "../utils/projectUrl";
 import CategoryBadge from "./CategoryBadge";
 import EnvironmentBadge from "./EnvironmentBadge";
+import PortStatusBadge from "./PortStatusBadge";
 import ProjectIcon from "./ProjectIcon";
 import ServerBadge from "./ServerBadge";
 import StatusBadge from "./StatusBadge";
@@ -26,6 +28,7 @@ interface Props {
   isAdmin: boolean;
   pm2Ocupado: boolean;
   favorito: boolean;
+  portStatus?: StatusPorta;
   aoEditar: (projeto: Project) => void;
   aoExcluir: (projeto: Project) => void;
   aoAlternar: (projeto: Project) => void;
@@ -105,6 +108,7 @@ export default function AdminProjectCard({
   isAdmin,
   pm2Ocupado,
   favorito,
+  portStatus,
   aoEditar,
   aoExcluir,
   aoAlternar,
@@ -160,10 +164,13 @@ export default function AdminProjectCard({
       </div>
 
       <div className="space-y-3">
-        <p className="inline-flex items-center gap-1.5 rounded-lg bg-base-700 px-2.5 py-1 text-xs text-slate-300">
-          <LifeBuoy className="h-3.5 w-3.5 text-sky-400" />
-          Porta: {project.port}
-        </p>
+        <div className="flex items-center gap-2">
+          <p className="inline-flex items-center gap-1.5 rounded-lg bg-base-700 px-2.5 py-1 text-xs text-slate-300">
+            <LifeBuoy className="h-3.5 w-3.5 text-sky-400" />
+            Porta: {project.port}
+          </p>
+          <PortStatusBadge status={portStatus} />
+        </div>
 
         <a
           href={urlProjeto}

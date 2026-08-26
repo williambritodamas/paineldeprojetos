@@ -9,6 +9,7 @@ import projectRoutes from "./routes/projectRoutes";
 import categoryRoutes from "./routes/categoryRoutes";
 import serverRoutes from "./routes/serverRoutes";
 import favoriteRoutes from "./routes/favoriteRoutes";
+import healthRoutes from "./routes/healthRoutes";
 import adminRoutes from "./routes/adminRoutes";
 
 const app = express();
@@ -58,6 +59,7 @@ app.use("/api/projects", projectRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/servers", serverRoutes);
 app.use("/api/favorites", favoriteRoutes);
+app.use("/api/health", healthRoutes);
 app.use("/api/admin", adminRoutes);
 
 // Tratamento de rotas inexistentes.
