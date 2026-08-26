@@ -165,6 +165,7 @@ export interface FiltroProjeto {
   environment?: AmbienteProjeto;
   categoryId?: number;
   serverId?: number;
+  favoritos?: boolean;
 }
 
 export interface ConfigRodape {

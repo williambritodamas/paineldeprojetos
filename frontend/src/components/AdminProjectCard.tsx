@@ -4,6 +4,7 @@
 
 import {
   ExternalLink,
+  Heart,
   LifeBuoy,
   Pencil,
   Play,
@@ -24,6 +25,7 @@ interface Props {
   project: Project;
   isAdmin: boolean;
   pm2Ocupado: boolean;
+  favorito: boolean;
   aoEditar: (projeto: Project) => void;
   aoExcluir: (projeto: Project) => void;
   aoAlternar: (projeto: Project) => void;
@@ -34,6 +36,7 @@ interface Props {
   aoIniciarProcesso: (projeto: Project, processo: ProjectProcess) => void;
   aoReiniciarProcesso: (projeto: Project, processo: ProjectProcess) => void;
   aoPararProcesso: (projeto: Project, processo: ProjectProcess) => void;
+  aoAlternarFavorito: (projeto: Project) => void;
 }
 
 function infoStatus(status?: Project["pm2Status"]): {
@@ -101,6 +104,7 @@ export default function AdminProjectCard({
   project,
   isAdmin,
   pm2Ocupado,
+  favorito,
   aoEditar,
   aoExcluir,
   aoAlternar,
@@ -111,6 +115,7 @@ export default function AdminProjectCard({
   aoIniciarProcesso,
   aoReiniciarProcesso,
   aoPararProcesso,
+  aoAlternarFavorito,
 }: Props) {
   const urlProjeto = gerarUrlProjeto(project.port);
   const status = infoStatus(project.pm2Status);
@@ -132,6 +137,18 @@ export default function AdminProjectCard({
           <EnvironmentBadge environment={project.environment} />
           <ServerBadge server={project.server} />
           <StatusBadge active={project.active} />
+          <button
+            type="button"
+            onClick={() => aoAlternarFavorito(project)}
+            title={favorito ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+            className={
+              favorito
+                ? "inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-500/50 bg-red-500/15 text-red-400 transition hover:border-red-500/70 hover:text-red-300"
+                : "inline-flex h-9 w-9 items-center justify-center rounded-lg border border-base-600 bg-base-700 text-slate-400 transition hover:border-red-500/50 hover:text-red-400"
+            }
+          >
+            <Heart className="h-4 w-4" fill={favorito ? "currentColor" : "none"} />
+          </button>
         </div>
       </div>
 

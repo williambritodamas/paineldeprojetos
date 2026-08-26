@@ -12,13 +12,14 @@ datasource db {
 // Usuário do sistema.
 // O papel (role) define o nível de acesso: "admin" ou "user".
 model User {
-  id        Int      @id @default(autoincrement())
+  id        Int        @id @default(autoincrement())
   name      String
-  username  String   @unique
+  username  String     @unique
   password  String
-  role      String   @default("user")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  role      String     @default("user")
+  favorites Favorite[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 }
 
 // Projeto que roda em uma porta específica.
@@ -60,6 +61,7 @@ model Project {
   server         Server?   @relation(fields: [serverId], references: [id], onDelete: SetNull)
   // Processos adicionais executados junto com o projeto (ex.: backend).
   processes   ProjectProcess[]
+  favorites   Favorite[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -114,4 +116,16 @@ model Server {
   updatedAt   DateTime @updatedAt
   // Relação: um servidor pode ter vários projetos.
   projects    Project[]
+}
+
+// Favorito: permite ao usuário marcar projetos como favoritos.
+model Favorite {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId Int
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, projectId])
 }

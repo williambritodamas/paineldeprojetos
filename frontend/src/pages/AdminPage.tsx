@@ -17,6 +17,8 @@ import Loading from "../components/Loading";
 import EmptyState from "../components/EmptyState";
 import { useAuth } from "../hooks/AuthContext";
 import { useCategories } from "../hooks/useCategories";
+import { useServers } from "../hooks/useServers";
+import { useFavorites } from "../hooks/useFavorites";
 import { useAdminProjects } from "../hooks/useAdminProjects";
 import * as projectService from "../services/projectService";
 import type { AmbienteProjeto, CriarProjetoDTO, Project, ProjectProcess } from "../types";
@@ -35,6 +37,8 @@ export default function AdminPage() {
   const navigate = useNavigate();
 
   const { categorias } = useCategories();
+  const { servidores } = useServers();
+  const { toggleFavorito, isFavorito } = useFavorites();
   const { projetos, carregando, erro, filtro, setFiltro, recarregar } =
     useAdminProjects();
 
@@ -211,6 +215,7 @@ export default function AdminPage() {
     executarAcaoProcesso(projeto, processo, "reiniciar");
   const aoPararProcesso = (projeto: Project, processo: ProjectProcess) =>
     executarAcaoProcesso(projeto, processo, "parar");
+  const aoAlternarFavorito = (projeto: Project) => toggleFavorito(projeto.id);
 
   function sair() {
     logout();
@@ -336,6 +341,26 @@ export default function AdminPage() {
               ))}
             </select>
 
+            <select
+              value={filtro.serverId || ""}
+              onChange={(e) =>
+                setFiltro((atual) => ({
+                  ...atual,
+                  serverId: e.target.value
+                    ? Number(e.target.value)
+                    : undefined,
+                }))
+              }
+              className="campo-input"
+            >
+              <option value="">Todos servidores</option>
+              {servidores.map((srv) => (
+                <option key={srv.id} value={srv.id}>
+                  {srv.name}
+                </option>
+              ))}
+            </select>
+
             <SortSelector
               valor={filtro.orderBy}
               aoMudar={(orderBy) =>
@@ -360,6 +385,7 @@ export default function AdminPage() {
                 project={projeto}
                 isAdmin={isAdmin}
                 pm2Ocupado={acaoPm2?.id === projeto.id}
+                favorito={isFavorito(projeto.id)}
                 aoEditar={abrirEdicao}
                 aoExcluir={(p) => setExcluindo(p)}
                 aoAlternar={aoAlternarStatus}
@@ -370,6 +396,7 @@ export default function AdminPage() {
                 aoIniciarProcesso={aoIniciarProcesso}
                 aoReiniciarProcesso={aoReiniciarProcesso}
                 aoPararProcesso={aoPararProcesso}
+                aoAlternarFavorito={aoAlternarFavorito}
               />
             ))}
           </ProjectGrid>
