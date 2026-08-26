@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import type { Project, ProjectProcess } from "../types";
 import type { StatusPorta } from "../services/healthService";
+import type { GitUpdatesInfo } from "../services/gitService";
 import { gerarUrlProjeto } from "../utils/projectUrl";
 import CategoryBadge from "./CategoryBadge";
 import EnvironmentBadge from "./EnvironmentBadge";
@@ -31,6 +32,7 @@ interface Props {
   favorito: boolean;
   portStatus?: StatusPorta;
   gitPullExecutando?: boolean;
+  gitUpdates?: GitUpdatesInfo;
   aoEditar: (projeto: Project) => void;
   aoExcluir: (projeto: Project) => void;
   aoAlternar: (projeto: Project) => void;
@@ -113,6 +115,7 @@ export default function AdminProjectCard({
   favorito,
   portStatus,
   gitPullExecutando,
+  gitUpdates,
   aoEditar,
   aoExcluir,
   aoAlternar,
@@ -314,11 +317,28 @@ export default function AdminProjectCard({
                 type="button"
                 disabled={gitPullExecutando}
                 onClick={() => aoGitPull(project)}
-                title="Atualizar código via git pull"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-base-600 bg-base-700 px-2.5 py-1.5 text-xs text-slate-300 transition hover:border-purple-500/50 hover:text-purple-400 disabled:opacity-40"
+                title={
+                  gitUpdates?.hasUpdates
+                    ? `${gitUpdates.behind} atualização(ões) disponível(is)`
+                    : "Atualizar código via git pull"
+                }
+                className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs transition disabled:opacity-40 ${
+                  gitUpdates?.hasUpdates
+                    ? "border-orange-500/50 bg-orange-500/15 text-orange-400 hover:border-orange-500/70 hover:text-orange-300"
+                    : "border-base-600 bg-base-700 text-slate-300 hover:border-purple-500/50 hover:text-purple-400"
+                }`}
               >
-                <Download className={`h-3.5 w-3.5 ${gitPullExecutando ? "animate-spin" : ""}`} />
-                {gitPullExecutando ? "Atualizando..." : "Git Pull"}
+                <span className="relative">
+                  <Download className={`h-3.5 w-3.5 ${gitPullExecutando ? "animate-spin" : ""}`} />
+                  {gitUpdates?.hasUpdates && (
+                    <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-orange-500" />
+                  )}
+                </span>
+                {gitPullExecutando
+                  ? "Atualizando..."
+                  : gitUpdates?.hasUpdates
+                    ? `Git Pull (${gitUpdates.behind})`
+                    : "Git Pull"}
               </button>
             )}
           </div>

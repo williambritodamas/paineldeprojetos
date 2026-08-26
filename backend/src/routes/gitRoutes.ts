@@ -1,4 +1,6 @@
 // Rotas de operações Git.
+// GET /api/admin/git/updates — verifica atualizações de todos os projetos.
+// GET /api/admin/git/:id/updates — verifica atualizações de um projeto.
 // POST /api/admin/git/:id/pull — executa git pull (admin).
 
 import { Router } from "express";
@@ -12,6 +14,8 @@ const router = Router();
 router.use(authMiddleware);
 router.use(adminMiddleware);
 
+router.get("/updates", gitController.checkAllUpdates);
+router.get("/:id/updates", gitController.checkUpdates);
 router.post("/:id/pull", gitController.gitPull);
 
 export default router;

@@ -20,6 +20,7 @@ import { useCategories } from "../hooks/useCategories";
 import { useServers } from "../hooks/useServers";
 import { useFavorites } from "../hooks/useFavorites";
 import { usePortMonitor } from "../hooks/usePortMonitor";
+import { useGitUpdates } from "../hooks/useGitUpdates";
 import { useAdminProjects } from "../hooks/useAdminProjects";
 import * as projectService from "../services/projectService";
 import * as gitService from "../services/gitService";
@@ -48,6 +49,7 @@ export default function AdminPage() {
   const { servidores } = useServers();
   const { toggleFavorito, isFavorito } = useFavorites();
   const { getStatusProjeto } = usePortMonitor({ intervalMs: 30000 });
+  const { getStatusProjeto: getStatusGitUpdates } = useGitUpdates({ intervalMs: 60000 });
   const { projetos, carregando, erro, filtro, setFiltro, recarregar } =
     useAdminProjects();
 
@@ -484,6 +486,7 @@ export default function AdminPage() {
                 favorito={isFavorito(projeto.id)}
                 portStatus={getStatusProjeto(projeto.id)}
                 gitPullExecutando={gitPullId === projeto.id}
+                gitUpdates={getStatusGitUpdates(projeto.id)}
                 aoEditar={abrirEdicao}
                 aoExcluir={(p) => setExcluindo(p)}
                 aoAlternar={aoAlternarStatus}
