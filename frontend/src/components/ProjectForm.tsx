@@ -43,6 +43,7 @@ export default function ProjectForm({
   const [icone, setIcone] = useState(projeto?.icon ?? "");
   const [porta, setPorta] = useState(projeto?.port.toString() ?? "");
   const [ativo, setAtivo] = useState(projeto?.active ?? true);
+  const [oculto, setOculto] = useState(projeto?.hidden ?? false);
   const [ambiente, setAmbiente] = useState(projeto?.environment ?? "");
   const [categoriaId, setCategoriaId] = useState(
     projeto?.categoryId?.toString() ?? ""
@@ -132,6 +133,7 @@ export default function ProjectForm({
       icon: icone.trim(),
       port: portaNum,
       active: ativo,
+      hidden: oculto,
       environment: ambiente || null,
       categoryId: categoriaId ? Number(categoriaId) : null,
       serverId: servidorId ? Number(servidorId) : null,
@@ -692,6 +694,18 @@ export default function ProjectForm({
             className="h-4 w-4 accent-sky-500"
           />
           Projeto ativo
+        </label>
+      </div>
+
+      <div>
+        <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-slate-300">
+          <input
+            type="checkbox"
+            checked={oculto}
+            onChange={(e) => setOculto(e.target.checked)}
+            className="h-4 w-4 accent-amber-500"
+          />
+          Ocultar na página pública
         </label>
       </div>
 

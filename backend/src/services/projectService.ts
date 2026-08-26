@@ -52,6 +52,7 @@ function montarProjetoRetorno(projeto: {
   icon: string | null;
   port: number;
   active: boolean;
+  hidden: boolean;
   environment: string | null;
   categoryId: number | null;
   category: { id: number; name: string; slug: string; createdAt: Date; updatedAt: Date } | null;
@@ -67,6 +68,7 @@ function montarProjetoRetorno(projeto: {
     icon: projeto.icon,
     port: projeto.port,
     active: projeto.active,
+    hidden: projeto.hidden,
     environment: projeto.environment,
     categoryId: projeto.categoryId,
     category: projeto.category ? montarCategoriaRetorno(projeto.category) : null,
@@ -84,6 +86,7 @@ function montarProjetoRetornoAdmin(projeto: {
   icon: string | null;
   port: number;
   active: boolean;
+  hidden: boolean;
   environment: string | null;
   categoryId: number | null;
   category: { id: number; name: string; slug: string; createdAt: Date; updatedAt: Date } | null;
@@ -165,10 +168,10 @@ function montarOrderBy(orderBy?: OrdenacaoProjeto) {
   }
 }
 
-// Lista projetos ativos para a tela pública.
+// Lista projetos ativos para a tela pública (exclui ocultos).
 export async function listarProjetosAtivos(): Promise<ProjetoRetorno[]> {
   const projetos = await prisma.project.findMany({
-    where: { active: true },
+    where: { active: true, hidden: false },
     orderBy: { name: "asc" },
     include: { category: true, server: true },
   });

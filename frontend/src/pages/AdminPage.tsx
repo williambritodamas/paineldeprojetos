@@ -292,6 +292,15 @@ export default function AdminPage() {
     executarAcaoProcesso(projeto, processo, "parar");
   const aoAlternarFavorito = (projeto: Project) => toggleFavorito(projeto.id);
 
+  async function aoOcultar(projeto: Project) {
+    try {
+      await projectService.updateProject(projeto.id, { hidden: !projeto.hidden });
+      await recarregar();
+    } catch {
+      alert("Erro ao alterar visibilidade do projeto.");
+    }
+  }
+
   async function aoGitPull(projeto: Project) {
     if (gitPullId) return;
 
@@ -477,7 +486,13 @@ export default function AdminPage() {
           <EmptyState mensagem="Nenhum projeto encontrado." />
         ) : (
           <ProjectGrid>
-            {projetos.map((projeto) => (
+            {[...projetos].sort((a, b) => {
+              const aFav = isFavorito(a.id);
+              const bFav = isFavorito(b.id);
+              if (aFav && !bFav) return -1;
+              if (!aFav && bFav) return 1;
+              return 0;
+            }).map((projeto) => (
               <AdminProjectCard
                 key={projeto.id}
                 project={projeto}
@@ -498,6 +513,7 @@ export default function AdminPage() {
                 aoReiniciarProcesso={aoReiniciarProcesso}
                 aoPararProcesso={aoPararProcesso}
                 aoAlternarFavorito={aoAlternarFavorito}
+                aoOcultar={aoOcultar}
                 aoGitPull={aoGitPull}
               />
             ))}

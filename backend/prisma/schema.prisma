@@ -33,6 +33,8 @@ model Project {
   icon        String?
   port        Int
   active      Boolean  @default(true)
+  // Se true, o projeto não aparece na página pública (apenas no admin).
+  hidden      Boolean  @default(false)
   // Ambiente do projeto: "desenvolvimento", "homologacao" ou "producao".
   environment String?
   // Caminho da pasta no servidor (usado para gerenciar via PM2).

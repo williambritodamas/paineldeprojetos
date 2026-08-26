@@ -5,6 +5,8 @@
 import {
   Download,
   ExternalLink,
+  Eye,
+  EyeOff,
   Heart,
   LifeBuoy,
   Pencil,
@@ -44,6 +46,7 @@ interface Props {
   aoReiniciarProcesso: (projeto: Project, processo: ProjectProcess) => void;
   aoPararProcesso: (projeto: Project, processo: ProjectProcess) => void;
   aoAlternarFavorito: (projeto: Project) => void;
+  aoOcultar: (projeto: Project) => void;
   aoGitPull: (projeto: Project) => void;
 }
 
@@ -169,6 +172,7 @@ export default function AdminProjectCard({
   aoReiniciarProcesso,
   aoPararProcesso,
   aoAlternarFavorito,
+  aoOcultar,
   aoGitPull,
 }: Props) {
   const urlProjeto = gerarUrlProjeto(project.port);
@@ -191,6 +195,24 @@ export default function AdminProjectCard({
           <EnvironmentBadge environment={project.environment} />
           <ServerBadge server={project.server} />
           <StatusBadge active={project.active} />
+          {project.hidden && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-slate-500/15 px-2.5 py-1 text-xs font-medium text-slate-400">
+              <EyeOff className="h-3 w-3" />
+              Oculto
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={() => aoOcultar(project)}
+            title={project.hidden ? "Exibir na página pública" : "Ocultar da página pública"}
+            className={
+              project.hidden
+                ? "inline-flex h-9 w-9 items-center justify-center rounded-lg border border-amber-500/50 bg-amber-500/15 text-amber-400 transition hover:border-amber-500/70 hover:text-amber-300"
+                : "inline-flex h-9 w-9 items-center justify-center rounded-lg border border-base-600 bg-base-700 text-slate-400 transition hover:border-amber-500/50 hover:text-amber-400"
+            }
+          >
+            {project.hidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
           <button
             type="button"
             onClick={() => aoAlternarFavorito(project)}

@@ -241,6 +241,7 @@ export async function criar(req: RequisicaoAutenticada, res: Response): Promise<
         corpo.icon !== undefined && corpo.icon !== null ? String(corpo.icon) : null,
       port: Number(corpo.port),
       active: Boolean(corpo.active),
+      hidden: Boolean(corpo.hidden),
       environment:
         typeof corpo.environment === "string"
           ? corpo.environment
@@ -363,6 +364,7 @@ export async function atualizar(req: RequisicaoAutenticada, res: Response): Prom
             : undefined,
       port: corpo.port !== undefined ? Number(corpo.port) : undefined,
       active: corpo.active !== undefined ? Boolean(corpo.active) : undefined,
+      hidden: corpo.hidden !== undefined ? Boolean(corpo.hidden) : undefined,
       environment:
         corpo.environment !== undefined
           ? typeof corpo.environment === "string"

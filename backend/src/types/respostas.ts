@@ -36,6 +36,7 @@ export interface ProjetoRetorno {
   icon: string | null;
   port: number;
   active: boolean;
+  hidden: boolean;
   environment: string | null;
   categoryId: number | null;
   category: CategoriaRetorno | null;
