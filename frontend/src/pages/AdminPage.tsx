@@ -22,6 +22,7 @@ import { useFavorites } from "../hooks/useFavorites";
 import { usePortMonitor } from "../hooks/usePortMonitor";
 import { useAdminProjects } from "../hooks/useAdminProjects";
 import * as projectService from "../services/projectService";
+import * as gitService from "../services/gitService";
 import type { AmbienteProjeto, CriarProjetoDTO, Project, ProjectProcess } from "../types";
 
 type StatusFiltro = "todos" | "ativos" | "inativos";
@@ -58,6 +59,9 @@ export default function AdminPage() {
   const [acaoPm2, setAcaoPm2] = useState<{ id: number; tipo: string } | null>(
     null
   );
+
+  // Git pull em andamento.
+  const [gitPullId, setGitPullId] = useState<number | null>(null);
 
   // Estatísticas calculadas a partir dos projetos carregados.
   const stats = useMemo(() => {
@@ -218,6 +222,25 @@ export default function AdminPage() {
   const aoPararProcesso = (projeto: Project, processo: ProjectProcess) =>
     executarAcaoProcesso(projeto, processo, "parar");
   const aoAlternarFavorito = (projeto: Project) => toggleFavorito(projeto.id);
+
+  async function aoGitPull(projeto: Project) {
+    if (gitPullId) return;
+
+    setGitPullId(projeto.id);
+    try {
+      const resultado = await gitService.gitPull(projeto.id);
+      alert(resultado.message + (resultado.output ? `\n\n${resultado.output}` : ""));
+      await recarregar();
+    } catch (erroGit: any) {
+      const detalhe =
+        erroGit?.response?.data?.details ||
+        erroGit?.response?.data?.error ||
+        "Erro ao executar git pull.";
+      alert(detalhe);
+    } finally {
+      setGitPullId(null);
+    }
+  }
 
   function sair() {
     logout();
@@ -389,6 +412,7 @@ export default function AdminPage() {
                 pm2Ocupado={acaoPm2?.id === projeto.id}
                 favorito={isFavorito(projeto.id)}
                 portStatus={getStatusProjeto(projeto.id)}
+                gitPullExecutando={gitPullId === projeto.id}
                 aoEditar={abrirEdicao}
                 aoExcluir={(p) => setExcluindo(p)}
                 aoAlternar={aoAlternarStatus}
@@ -400,6 +424,7 @@ export default function AdminPage() {
                 aoReiniciarProcesso={aoReiniciarProcesso}
                 aoPararProcesso={aoPararProcesso}
                 aoAlternarFavorito={aoAlternarFavorito}
+                aoGitPull={aoGitPull}
               />
             ))}
           </ProjectGrid>

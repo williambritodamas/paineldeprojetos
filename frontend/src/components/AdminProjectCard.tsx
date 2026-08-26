@@ -3,6 +3,7 @@
 // para administradores, o gerenciamento via PM2.
 
 import {
+  Download,
   ExternalLink,
   Heart,
   LifeBuoy,
@@ -29,6 +30,7 @@ interface Props {
   pm2Ocupado: boolean;
   favorito: boolean;
   portStatus?: StatusPorta;
+  gitPullExecutando?: boolean;
   aoEditar: (projeto: Project) => void;
   aoExcluir: (projeto: Project) => void;
   aoAlternar: (projeto: Project) => void;
@@ -40,6 +42,7 @@ interface Props {
   aoReiniciarProcesso: (projeto: Project, processo: ProjectProcess) => void;
   aoPararProcesso: (projeto: Project, processo: ProjectProcess) => void;
   aoAlternarFavorito: (projeto: Project) => void;
+  aoGitPull: (projeto: Project) => void;
 }
 
 function infoStatus(status?: Project["pm2Status"]): {
@@ -109,6 +112,7 @@ export default function AdminProjectCard({
   pm2Ocupado,
   favorito,
   portStatus,
+  gitPullExecutando,
   aoEditar,
   aoExcluir,
   aoAlternar,
@@ -120,6 +124,7 @@ export default function AdminProjectCard({
   aoReiniciarProcesso,
   aoPararProcesso,
   aoAlternarFavorito,
+  aoGitPull,
 }: Props) {
   const urlProjeto = gerarUrlProjeto(project.port);
   const status = infoStatus(project.pm2Status);
@@ -303,6 +308,19 @@ export default function AdminProjectCard({
               <Square className="h-3.5 w-3.5" />
               Parar
             </button>
+
+            {project.folderPath && (
+              <button
+                type="button"
+                disabled={gitPullExecutando}
+                onClick={() => aoGitPull(project)}
+                title="Atualizar código via git pull"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-base-600 bg-base-700 px-2.5 py-1.5 text-xs text-slate-300 transition hover:border-purple-500/50 hover:text-purple-400 disabled:opacity-40"
+              >
+                <Download className={`h-3.5 w-3.5 ${gitPullExecutando ? "animate-spin" : ""}`} />
+                {gitPullExecutando ? "Atualizando..." : "Git Pull"}
+              </button>
+            )}
           </div>
 
           {(project.processes?.length ?? 0) > 0 && (
