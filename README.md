@@ -7,7 +7,13 @@ A aplicação funciona como um **launchpad central**: a página pública visuali
 - cadastrar/editar/excluir **usuários** do painel (com papéis admin ou usuário comum);
 - configurar o **caminho da pasta**, o **comando de execução** e o **nome do processo no PM2** de cada projeto;
 - cadastrar **processos adicionais** por projeto (nome, pasta, porta e comando), para sistemas que rodam em mais de um processo;
-- gerenciar os processos via **PM2** diretamente no painel: habilitar/desabilitar a inicialização automática no boot, iniciar, parar, reiniciar e ver o status de cada processo.
+- gerenciar os processos via **PM2** diretamente no painel: habilitar/desabilitar a inicialização automática no boot, iniciar, parar, reiniciar e ver o status de cada processo;
+- classificar projetos por **categorias** (Educação, Audiovisual, Sistemas, etc.);
+- classificar projetos por **ambiente** (Desenvolvimento, Homologação, Produção);
+- associar projetos a **servidores** (Local, Escola, Cloud, etc.);
+- marcar projetos como **favoritos** para acesso rápido;
+- **ordenar** projetos por nome, porta ou data de criação/atualização;
+- **monitorar portas** dos projetos em tempo real (status online/offline com latência).
 
 ---
 
@@ -29,6 +35,9 @@ Cada projeto é exibido com:
 - ícone;
 - status (ativo/inativo);
 - porta;
+- categoria;
+- ambiente;
+- servidor;
 - botão para acessar em nova aba.
 
 ---
@@ -282,7 +291,7 @@ O seed atualiza a senha do usuário administrador existente usando bcrypt.
 
 Vitrine de projetos ativos. Qualquer visitante pode:
 
-- visualizar nome, descrição, ícone, status e porta;
+- visualizar nome, descrição, ícone, status, porta, categoria, ambiente e servidor;
 - abrir o projeto em uma nova aba.
 
 Não possui botões de edição, exclusão ou cadastro.
@@ -295,19 +304,84 @@ Somente usuário autenticado:
 - editar projetos;
 - excluir projetos (com confirmação);
 - ativar/desativar projetos;
-- buscar e filtrar projetos;
-- visualizar estatísticas.
+- buscar e filtrar projetos por status, ambiente, categoria e servidor;
+- ordenar projetos por nome, porta ou data;
+- marcar projetos como favoritos;
+- visualizar estatísticas;
+- visualizar status de portas dos projetos (online/offline).
 
 **Apenas administradores** (papel `admin`):
 
 - página `/admin/usuarios` para cadastrar, editar e excluir usuários do painel;
 - configurar o caminho da pasta, o comando de execução e o nome do processo PM2 dos projetos;
 - cadastrar processos adicionais por projeto;
-- gerenciar os processos via PM2 (inicialização automática, iniciar/parar/reiniciar e status de cada processo).
+- gerenciar os processos via PM2 (inicialização automática, iniciar/parar/reiniciar e status de cada processo);
+- cadastrar e gerenciar categorias;
+- cadastrar e gerenciar servidores.
 
 Usuários com papel `user` acessam `/admin` e gerenciam os projetos normalmente, mas não veem os campos PM2, a página de usuários nem executam operações no PM2.
 
 Usuários não autenticados que acessarem `/admin` são redirecionados para `/login`.
+
+---
+
+## Features implementadas
+
+### Ordenação
+
+A página administrativa permite ordenar projetos por:
+
+- Nome (A-Z / Z-A);
+- Porta (crescente/decrescente);
+- Data de criação (mais recente/mais antigo);
+- Data de atualização (mais recente/mais antigo).
+
+### Ambientes
+
+Cada projeto pode ser classificado em um ambiente:
+
+- **Desenvolvimento** (badge verde);
+- **Homologação** (badge amarelo);
+- **Produção** (badge vermelho).
+
+O filtro de ambientes está disponível na página administrativa.
+
+### Categorias
+
+Sistema completo de categorias para organizar projetos:
+
+- CRUD completo (criar, ler, atualizar, excluir);
+- Badge colorido nos cards;
+- Filtro por categoria na página administrativa;
+- Contagem de projetos por categoria.
+
+### Servidores
+
+Sistema completo de servidores para associar projetos:
+
+- CRUD completo (criar, ler, atualizar, excluir);
+- Badge laranja nos cards;
+- Filtro por servidor na página administrativa;
+- Contagem de projetos por servidor.
+
+### Favoritos
+
+Sistema de favoritos para acesso rápido:
+
+- Botão de favorito (coração) nos cards;
+- Toggle para adicionar/remover dos favoritos;
+- Filtro por favoritos disponível;
+- Persistência por usuário.
+
+### Monitoramento de Portas
+
+Verificação em tempo real do status das portas:
+
+- Verificação via TCP com timeout configurável;
+- Status visual: verde (aberta), vermelho (fechada);
+- Exibição de latência de resposta;
+- Polling automático a cada 30 segundos;
+- Endpoint público para verificação: `/api/health/ports`.
 
 ---
 
@@ -396,6 +470,8 @@ Regras de segurança:
 | Método | Rota                    | Acesso        | Descrição                        |
 | ------ | ----------------------- | ------------- | -------------------------------- |
 | GET    | `/api/health`           | Público       | Verificação de saúde da API      |
+| GET    | `/api/health/ports`     | Público       | Verifica portas de todos os projetos ativos |
+| GET    | `/api/health/ports/:id` | Público       | Verifica a porta de um projeto específico |
 | POST   | `/api/auth/login`       | Público       | Realiza a autenticação           |
 | GET    | `/api/auth/me`          | Autenticado   | Dados do usuário autenticado     |
 | GET    | `/api/projects`         | Público       | Lista projetos ativos            |
@@ -403,6 +479,17 @@ Regras de segurança:
 | POST   | `/api/projects`         | Autenticado   | Cria um projeto                  |
 | PUT    | `/api/projects/:id`     | Autenticado   | Atualiza um projeto              |
 | DELETE | `/api/projects/:id`     | Autenticado   | Exclui um projeto                |
+| GET    | `/api/categories`       | Público       | Lista categorias                 |
+| POST   | `/api/categories`       | Admin         | Cria uma categoria               |
+| PUT    | `/api/categories/:id`   | Admin         | Atualiza uma categoria           |
+| DELETE | `/api/categories/:id`   | Admin         | Exclui uma categoria             |
+| GET    | `/api/servers`          | Público       | Lista servidores                 |
+| GET    | `/api/servers/:id`      | Público       | Detalhe de um servidor           |
+| POST   | `/api/servers`          | Admin         | Cria um servidor                 |
+| PUT    | `/api/servers/:id`      | Admin         | Atualiza um servidor             |
+| DELETE | `/api/servers/:id`      | Admin         | Exclui um servidor               |
+| GET    | `/api/favorites`        | Autenticado   | Lista IDs dos favoritos do usuário |
+| POST   | `/api/favorites/:projectId` | Autenticado | Alterna favorito (adiciona/remove) |
 | GET    | `/api/admin/projects`   | Autenticado   | Lista com busca, filtro e status PM2 |
 | GET    | `/api/admin/users`      | Admin         | Lista usuários do painel         |
 | POST   | `/api/admin/users`      | Admin         | Cria um usuário                  |
@@ -542,13 +629,11 @@ Sem necessidade de alterar o cadastro.
 
 ## Planejamento futuro (não implementado)
 
-- monitoramento de portas (online/verificando/off-line);
-- categorias (Educação, Audiovisual, Oficina, Sistemas, Testes);
-- ambientes (Desenvolvimento, Homologação, Produção);
-- servidores (Local, Escola, Cloud);
-- favoritos;
-- ordenação;
-- seletor de ícones.
+- dashboard com métricas de uso e performance;
+- relatórios de disponibilidade;
+- notificações de status (email/webhook);
+- autenticação SSO/LDAP;
+- audit log de ações administrativas.
 
 ---
 
