@@ -67,6 +67,7 @@ export interface CriarProjetoDTO {
   active: boolean;
   environment?: string | null;
   categoryId?: number | null;
+  serverId?: number | null;
   folderPath?: string | null;
   script?: string;
   autostart?: boolean;
@@ -99,6 +100,20 @@ export interface AtualizarCategoriaDTO {
   slug?: string;
 }
 
+// Dados utilizados para criar um servidor.
+export interface CriarServidorDTO {
+  name: string;
+  host?: string;
+  description?: string;
+}
+
+// Dados utilizados para atualizar um servidor.
+export interface AtualizarServidorDTO {
+  name?: string;
+  host?: string;
+  description?: string;
+}
+
 // Filtros utilizados na busca administrativa.
 export type AmbienteProjeto =
   | "desenvolvimento"
@@ -121,6 +136,7 @@ export interface FiltroBuscaProjetos {
   orderBy?: OrdenacaoProjeto;
   environment?: AmbienteProjeto;
   categoryId?: number;
+  serverId?: number;
 }
 
 export type { Project, User };

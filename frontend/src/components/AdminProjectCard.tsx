@@ -17,6 +17,7 @@ import { gerarUrlProjeto } from "../utils/projectUrl";
 import CategoryBadge from "./CategoryBadge";
 import EnvironmentBadge from "./EnvironmentBadge";
 import ProjectIcon from "./ProjectIcon";
+import ServerBadge from "./ServerBadge";
 import StatusBadge from "./StatusBadge";
 
 interface Props {
@@ -129,6 +130,7 @@ export default function AdminProjectCard({
         <div className="flex items-center gap-2">
           <CategoryBadge category={project.category} />
           <EnvironmentBadge environment={project.environment} />
+          <ServerBadge server={project.server} />
           <StatusBadge active={project.active} />
         </div>
       </div>

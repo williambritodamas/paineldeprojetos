@@ -27,6 +27,24 @@ function montarCategoriaRetorno(categoria: {
   };
 }
 
+function montarServidorRetorno(servidor: {
+  id: number;
+  name: string;
+  host: string | null;
+  description: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}) {
+  return {
+    id: servidor.id,
+    name: servidor.name,
+    host: servidor.host,
+    description: servidor.description,
+    createdAt: servidor.createdAt.toISOString(),
+    updatedAt: servidor.updatedAt.toISOString(),
+  };
+}
+
 function montarProjetoRetorno(projeto: {
   id: number;
   name: string;
@@ -37,6 +55,8 @@ function montarProjetoRetorno(projeto: {
   environment: string | null;
   categoryId: number | null;
   category: { id: number; name: string; slug: string; createdAt: Date; updatedAt: Date } | null;
+  serverId: number | null;
+  server: { id: number; name: string; host: string | null; description: string | null; createdAt: Date; updatedAt: Date } | null;
   createdAt: Date;
   updatedAt: Date;
 }): ProjetoRetorno {
@@ -50,6 +70,8 @@ function montarProjetoRetorno(projeto: {
     environment: projeto.environment,
     categoryId: projeto.categoryId,
     category: projeto.category ? montarCategoriaRetorno(projeto.category) : null,
+    serverId: projeto.serverId,
+    server: projeto.server ? montarServidorRetorno(projeto.server) : null,
     createdAt: projeto.createdAt.toISOString(),
     updatedAt: projeto.updatedAt.toISOString(),
   };
@@ -65,6 +87,8 @@ function montarProjetoRetornoAdmin(projeto: {
   environment: string | null;
   categoryId: number | null;
   category: { id: number; name: string; slug: string; createdAt: Date; updatedAt: Date } | null;
+  serverId: number | null;
+  server: { id: number; name: string; host: string | null; description: string | null; createdAt: Date; updatedAt: Date } | null;
   folderPath: string | null;
   script: string;
   autostart: boolean;
@@ -146,7 +170,7 @@ export async function listarProjetosAtivos(): Promise<ProjetoRetorno[]> {
   const projetos = await prisma.project.findMany({
     where: { active: true },
     orderBy: { name: "asc" },
-    include: { category: true },
+    include: { category: true, server: true },
   });
   return projetos.map(montarProjetoRetorno);
 }
@@ -155,7 +179,7 @@ export async function listarProjetosAtivos(): Promise<ProjetoRetorno[]> {
 export async function listarProjetosComFiltro(
   filtro: FiltroBuscaProjetos
 ): Promise<ProjetoRetornoAdmin[]> {
-  const { busca, status, orderBy, environment, categoryId } = filtro;
+  const { busca, status, orderBy, environment, categoryId, serverId } = filtro;
 
   const condicoesBusca: Array<{ [campo: string]: unknown }> = [];
 
@@ -173,8 +197,8 @@ export async function listarProjetosComFiltro(
 
   // Prisma exige pelo menos uma condição no OR quando informado.
   const onde:
-    | { active?: boolean; environment?: string; categoryId?: number }
-    | { active?: boolean; environment?: string; categoryId?: number; OR: Array<{ [campo: string]: unknown }> } = condicoesBusca.length
+    | { active?: boolean; environment?: string; categoryId?: number; serverId?: number }
+    | { active?: boolean; environment?: string; categoryId?: number; serverId?: number; OR: Array<{ [campo: string]: unknown }> } = condicoesBusca.length
       ? { OR: condicoesBusca }
       : {};
 
@@ -192,10 +216,14 @@ export async function listarProjetosComFiltro(
     onde.categoryId = categoryId;
   }
 
+  if (serverId) {
+    onde.serverId = serverId;
+  }
+
   const projetos = await prisma.project.findMany({
     where: onde,
     orderBy: montarOrderBy(orderBy),
-    include: { processes: { orderBy: { label: "asc" } }, category: true },
+    include: { processes: { orderBy: { label: "asc" } }, category: true, server: true },
   });
 
   return projetos.map(montarProjetoRetornoAdmin);
@@ -205,7 +233,7 @@ export async function listarProjetosComFiltro(
 export async function obterProjeto(id: number): Promise<ProjetoRetorno | null> {
   const projeto = await prisma.project.findUnique({
     where: { id },
-    include: { category: true },
+    include: { category: true, server: true },
   });
   return projeto ? montarProjetoRetorno(projeto) : null;
 }
@@ -216,7 +244,7 @@ export async function obterProjetoAdmin(
 ): Promise<ProjetoRetornoAdmin | null> {
   const projeto = await prisma.project.findUnique({
     where: { id },
-    include: { processes: { orderBy: { label: "asc" } }, category: true },
+    include: { processes: { orderBy: { label: "asc" } }, category: true, server: true },
   });
   return projeto ? montarProjetoRetornoAdmin(projeto) : null;
 }
@@ -242,6 +270,7 @@ export async function criarProjeto(
       active: dados.active,
       environment: dados.environment?.trim() || null,
       categoryId: dados.categoryId ?? null,
+      serverId: dados.serverId ?? null,
       folderPath: dados.folderPath?.trim() || null,
       script: dados.script?.trim() || "npm start",
       autostart: dados.autostart ?? false,
@@ -265,7 +294,7 @@ export async function criarProjeto(
         })),
       },
     },
-    include: { processes: true, category: true },
+    include: { processes: true, category: true, server: true },
   });
   return montarProjetoRetornoAdmin(projeto);
 }
@@ -290,6 +319,7 @@ export async function atualizarProjeto(
     active?: boolean;
     environment?: string | null;
     categoryId?: number | null;
+    serverId?: number | null;
     folderPath?: string | null;
     script?: string;
     autostart?: boolean;
@@ -335,6 +365,9 @@ export async function atualizarProjeto(
   }
   if (dados.categoryId !== undefined) {
     dadosAtualizados.categoryId = dados.categoryId ?? null;
+  }
+  if (dados.serverId !== undefined) {
+    dadosAtualizados.serverId = dados.serverId ?? null;
   }
   if (dados.folderPath !== undefined) {
     dadosAtualizados.folderPath = dados.folderPath?.trim() || null;
@@ -386,7 +419,7 @@ export async function atualizarProjeto(
   const projeto = await prisma.project.update({
     where: { id },
     data: dadosAtualizados,
-    include: { processes: { orderBy: { label: "asc" } }, category: true },
+    include: { processes: { orderBy: { label: "asc" } }, category: true, server: true },
   });
 
   return montarProjetoRetornoAdmin(projeto);

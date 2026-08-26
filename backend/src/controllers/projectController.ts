@@ -121,6 +121,10 @@ export async function listarAdministrativo(
       typeof req.query.categoryId === "string" && !isNaN(Number(req.query.categoryId))
         ? Number(req.query.categoryId)
         : undefined;
+    const serverIdParam =
+      typeof req.query.serverId === "string" && !isNaN(Number(req.query.serverId))
+        ? Number(req.query.serverId)
+        : undefined;
 
     const projetos = await projectService.listarProjetosComFiltro({
       busca: buscaParam,
@@ -128,6 +132,7 @@ export async function listarAdministrativo(
       orderBy: orderByParam,
       environment: environmentParam,
       categoryId: categoryIdParam,
+      serverId: serverIdParam,
     });
 
     // Status do PM2 é opcional: se o daemon estiver indisponível,
@@ -248,6 +253,12 @@ export async function criar(req: RequisicaoAutenticada, res: Response): Promise<
           : corpo.categoryId === null
             ? null
             : undefined,
+      serverId:
+        typeof corpo.serverId === "number"
+          ? corpo.serverId
+          : corpo.serverId === null
+            ? null
+            : undefined,
       folderPath:
         ehAdmin && typeof corpo.folderPath === "string"
           ? corpo.folderPath
@@ -362,6 +373,12 @@ export async function atualizar(req: RequisicaoAutenticada, res: Response): Prom
         corpo.categoryId !== undefined
           ? typeof corpo.categoryId === "number"
             ? corpo.categoryId
+            : null
+          : undefined,
+      serverId:
+        corpo.serverId !== undefined
+          ? typeof corpo.serverId === "number"
+            ? corpo.serverId
             : null
           : undefined,
       folderPath:

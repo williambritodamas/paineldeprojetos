@@ -35,6 +35,16 @@ export interface Category {
   _count?: { projects: number };
 }
 
+export interface Server {
+  id: number;
+  name: string;
+  host: string | null;
+  description: string | null;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { projects: number };
+}
+
 export interface Project {
   id: number;
   name: string;
@@ -45,6 +55,8 @@ export interface Project {
   environment?: string | null;
   categoryId?: number | null;
   category?: Category | null;
+  serverId?: number | null;
+  server?: Server | null;
   folderPath?: string | null;
   script?: string;
   autostart?: boolean;
@@ -90,6 +102,7 @@ export interface CriarProjetoDTO {
   active: boolean;
   environment?: string | null;
   categoryId?: number | null;
+  serverId?: number | null;
   folderPath?: string | null;
   script?: string;
   autostart?: boolean;
@@ -151,6 +164,7 @@ export interface FiltroProjeto {
   orderBy?: OrdenacaoProjeto;
   environment?: AmbienteProjeto;
   categoryId?: number;
+  serverId?: number;
 }
 
 export interface ConfigRodape {

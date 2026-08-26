@@ -19,6 +19,16 @@ export interface CategoriaRetorno {
   _count?: { projects: number };
 }
 
+export interface ServidorRetorno {
+  id: number;
+  name: string;
+  host: string | null;
+  description: string | null;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { projects: number };
+}
+
 export interface ProjetoRetorno {
   id: number;
   name: string;
@@ -29,6 +39,8 @@ export interface ProjetoRetorno {
   environment: string | null;
   categoryId: number | null;
   category: CategoriaRetorno | null;
+  serverId: number | null;
+  server: ServidorRetorno | null;
   createdAt: string;
   updatedAt: string;
 }

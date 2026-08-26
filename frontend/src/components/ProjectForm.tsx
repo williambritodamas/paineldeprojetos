@@ -4,6 +4,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { ICONES_DISPONIVEIS } from "../constants/projectIcons";
 import { useCategories } from "../hooks/useCategories";
+import { useServers } from "../hooks/useServers";
 import type { CriarProjetoDTO, Project } from "../types";
 import ProjectIcon from "./ProjectIcon";
 
@@ -36,6 +37,7 @@ export default function ProjectForm({
   salvando,
 }: Props) {
   const { categorias } = useCategories();
+  const { servidores } = useServers();
   const [nome, setNome] = useState(projeto?.name ?? "");
   const [descricao, setDescricao] = useState(projeto?.description ?? "");
   const [icone, setIcone] = useState(projeto?.icon ?? "");
@@ -44,6 +46,9 @@ export default function ProjectForm({
   const [ambiente, setAmbiente] = useState(projeto?.environment ?? "");
   const [categoriaId, setCategoriaId] = useState(
     projeto?.categoryId?.toString() ?? ""
+  );
+  const [servidorId, setServidorId] = useState(
+    projeto?.serverId?.toString() ?? ""
   );
   const [caminhoPasta, setCaminhoPasta] = useState(
     projeto?.folderPath ?? ""
@@ -129,6 +134,7 @@ export default function ProjectForm({
       active: ativo,
       environment: ambiente || null,
       categoryId: categoriaId ? Number(categoriaId) : null,
+      serverId: servidorId ? Number(servidorId) : null,
       ...(isAdmin
         ? {
             folderPath: caminhoPasta.trim(),
@@ -280,6 +286,25 @@ export default function ProjectForm({
           {categorias.map((cat) => (
             <option key={cat.id} value={cat.id}>
               {cat.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label htmlFor="servidor" className="campo-label">
+          Servidor
+        </label>
+        <select
+          id="servidor"
+          value={servidorId}
+          onChange={(e) => setServidorId(e.target.value)}
+          className="campo-input"
+        >
+          <option value="">Nenhum</option>
+          {servidores.map((srv) => (
+            <option key={srv.id} value={srv.id}>
+              {srv.name}
             </option>
           ))}
         </select>

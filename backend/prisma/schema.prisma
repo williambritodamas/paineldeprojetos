@@ -55,6 +55,9 @@ model Project {
   // Categoria do projeto (opcional).
   categoryId     Int?
   category       Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  // Servidor do projeto (opcional).
+  serverId       Int?
+  server         Server?   @relation(fields: [serverId], references: [id], onDelete: SetNull)
   // Processos adicionais executados junto com o projeto (ex.: backend).
   processes   ProjectProcess[]
   createdAt   DateTime @default(now())
@@ -99,4 +102,16 @@ model Category {
   updatedAt DateTime @updatedAt
   // Relação: uma categoria pode ter vários projetos.
   projects  Project[]
+}
+
+// Servidor onde o projeto está hospedado (ex.: Local, Escola, Cloud).
+model Server {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  host        String?
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  // Relação: um servidor pode ter vários projetos.
+  projects    Project[]
 }
