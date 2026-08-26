@@ -12,7 +12,7 @@
 import os from "os";
 import path from "path";
 import fs from "fs";
-import { execSync } from "child_process";
+import { execSync, spawn } from "child_process";
 import pm2 from "pm2";
 import { ErroNegocio } from "../utils/helpers";
 
@@ -191,6 +191,107 @@ export function montarUnidadesProjeto(
   return unidades;
 }
 
+// ---------- Auto-gerência do próprio painel ----------
+//
+// O painel também é um projeto gerenciado pelo PM2 ("painel-backend").
+// As operações comuns usam o fluxo excluir -> iniciar orquestrado pela
+// própria API; ao agir sobre si mesma, a API morreria no meio do caminho e
+// o processo não voltaria. Por isso, quando a unidade alvo é o próprio
+// processo, respondemos ao cliente e delegamos a recriação a um helper
+// destacado (backend/scripts/pm2-self-helper.cjs).
+
+// Identifica se a unidade apontada é o próprio processo da API.
+// O PM2 injeta "pm_id" e "name" no ambiente de toda a árvore gerenciada.
+export function ehProprioProcesso(nome: string): boolean {
+  return (
+    process.env.pm_id !== undefined &&
+    typeof process.env.name === "string" &&
+    process.env.name === nome
+  );
+}
+
+// Localiza o helper destacado tanto no desenvolvimento (src/services)
+// quanto na build (dist): sobe pastas até encontrar backend/scripts.
+function caminhoHelperSelf(): string {
+  let atual = __dirname;
+
+  for (let nivel = 0; nivel < 5; nivel += 1) {
+    const candidato = path.join(atual, "scripts", "pm2-self-helper.cjs");
+    if (fs.existsSync(candidato)) {
+      return candidato;
+    }
+    atual = path.join(atual, "..");
+  }
+
+  return path.join(process.cwd(), "scripts", "pm2-self-helper.cjs");
+}
+
+// Agenda a recriação do próprio painel via helper destacado e retorna na
+// hora: o helper sobrevive ao encerramento da API e executa excluir ->
+// iniciar -> dump no daemon, aplicando a configuração atual do banco.
+export function recriarSelfDepois(unidade: UnidadeProcesso): void {
+  const caminhoHelper = caminhoHelperSelf();
+  if (!fs.existsSync(caminhoHelper)) {
+    throw new ErroNegocio(
+      500,
+      "Helper de reinício do painel não encontrado em backend/scripts."
+    );
+  }
+
+  const config = montarConfigUnidade(unidade);
+  const arquivoInstrucao = path.join(
+    os.tmpdir(),
+    `painel-self-${Date.now()}-${process.pid}.json`
+  );
+
+  // Pode conter variáveis sensíveis; grava com permissão restrita.
+  fs.writeFileSync(arquivoInstrucao, JSON.stringify({ config }), {
+    mode: 0o600,
+  });
+
+  try {
+    const filho = spawn(process.execPath, [caminhoHelper, arquivoInstrucao], {
+      detached: true,
+      stdio: "ignore",
+    });
+    filho.unref();
+  } catch (erro) {
+    fs.unlinkSync(arquivoInstrucao);
+    throw new ErroNegocio(
+      500,
+      `Falha ao agendar a recriação do próprio painel: ${String(erro)}`
+    );
+  }
+}
+
+// Remove entradas pelo nome diretamente do dump de boot (sem tocar nos
+// processos vivos). Usado quando o painel desabilita o próprio início
+// automático: mantém a API no ar e apenas a tira da restauração do boot.
+function removerNomesDoDump(nomes: string[]): void {
+  if (nomes.length === 0) {
+    return;
+  }
+
+  try {
+    const caminho = caminhoDump();
+    if (!fs.existsSync(caminho)) {
+      return;
+    }
+
+    const dump = JSON.parse(fs.readFileSync(caminho, "utf8"));
+    if (!Array.isArray(dump)) {
+      return;
+    }
+
+    const filtrado = dump.filter((item) => !nomes.includes(item?.name));
+    if (filtrado.length !== dump.length) {
+      fs.writeFileSync(caminho, JSON.stringify(filtrado, null, 2));
+    }
+  } catch {
+    // Correção best-effort: não deve derrubar a operação original.
+  }
+}
+
 function conectarAoPm2(): Promise<void> {
   return new Promise((resolver, rejeitar) => {
     pm2.connect((erro) => {
@@ -201,9 +302,7 @@ function conectarAoPm2(): Promise<void> {
       }
     });
   });
-}
-
-function desconectarDoPm2(): void {
+}function desconectarDoPm2(): void {
   try {
     pm2.disconnect();
   } catch {
@@ -810,12 +909,23 @@ async function garantirProcesso(unidade: UnidadeProcesso): Promise<string> {
 
 // Habilita a inicialização automática: registra todos os processos e salva o
 // dump para que sejam restaurados no boot.
+// Retorna true quando a lista incluía o próprio painel (recriado pelo helper
+// destacado, que também grava o dump final com ele incluído).
 export async function habilitarAutostart(
   unidades: UnidadeProcesso[]
-): Promise<void> {
+): Promise<boolean> {
   return serializar(() =>
     executarNoPm2(async () => {
+      // O próprio painel não pode ser recriado por esta API (ela morreria
+      // antes do início); fica para o helper destacado, após o dump.
+      let unidadeSelf: UnidadeProcesso | null = null;
+
       for (const unidade of unidades) {
+        if (ehProprioProcesso(unidade.processName)) {
+          unidadeSelf = unidade;
+          continue;
+        }
+
         // Remove o registro anterior (se existir) para que o processo seja
         // recriado com o ambiente limpo e o filter_env aplicado. O PM2, ao
         // reiniciar um nome já existente, reutiliza o ambiente antigo.
@@ -825,21 +935,39 @@ export async function habilitarAutostart(
         await iniciarProcessoNoPm2(config);
       }
       await salvarDump();
+
+      if (unidadeSelf) {
+        recriarSelfDepois(unidadeSelf);
+      }
+
+      return unidadeSelf !== null;
     })
   );
 }
 
 // Desabilita a inicialização automática: remove todos os processos e salva o
 // dump para que não sejam restaurados no boot.
+// O próprio painel é apenas removido do dump (permanece online): parar a
+// API derrubaria o painel inteiro. Retorna true quando isso ocorreu.
 export async function desabilitarAutostart(
   unidades: UnidadeProcesso[]
-): Promise<void> {
+): Promise<boolean> {
   return serializar(() =>
     executarNoPm2(async () => {
+      const nomesSelf: string[] = [];
+
       for (const unidade of unidades) {
+        if (ehProprioProcesso(unidade.processName)) {
+          nomesSelf.push(unidade.processName);
+          continue;
+        }
         await excluirProcessoNoPm2(unidade.processName, unidade.port);
       }
       await salvarDump();
+
+      removerNomesDoDump(nomesSelf);
+
+      return nomesSelf.length > 0;
     })
   );
 }
@@ -847,10 +975,18 @@ export async function desabilitarAutostart(
 // Inicia um processo (registra se necessário) sem alterar o autostart.
 // Quando "manterNoBoot" é true (projeto com início automático ativo), grava o
 // dump para que o processo continue na lista de restauração do boot.
+// Para o próprio painel, delega ao helper destacado.
 export async function iniciarProcesso(
   unidade: UnidadeProcesso,
   manterNoBoot = false
-): Promise<void> {
+): Promise<{ selfGerenciado: boolean }> {
+  // Esta API é o próprio painel: se está respondendo, o processo existe.
+  // Recria via helper para aplicar a configuração atual do banco.
+  if (ehProprioProcesso(unidade.processName)) {
+    recriarSelfDepois(unidade);
+    return { selfGerenciado: true };
+  }
+
   return serializar(() =>
     executarNoPm2(async () => {
       const config = montarConfigUnidade(unidade);
@@ -868,6 +1004,8 @@ export async function iniciarProcesso(
       if (manterNoBoot) {
         await salvarDump();
       }
+
+      return { selfGerenciado: false };
     })
   );
 }
@@ -875,10 +1013,18 @@ export async function iniciarProcesso(
 // Reinicia um processo já registrado.
 // Quando "manterNoBoot" é true (projeto com início automático ativo), grava o
 // dump para que o processo continue na lista de restauração do boot.
+// Para o próprio painel, delega ao helper destacado.
 export async function reiniciarProcesso(
   unidade: UnidadeProcesso,
   manterNoBoot = false
-): Promise<void> {
+): Promise<{ selfGerenciado: boolean }> {
+  // Recriar a própria API por aqui mataria o processo no meio da operação:
+  // o início nunca aconteceria. O helper destacado assume a tarefa.
+  if (ehProprioProcesso(unidade.processName)) {
+    recriarSelfDepois(unidade);
+    return { selfGerenciado: true };
+  }
+
   return serializar(() =>
     executarNoPm2(async () => {
       // O processo precisa estar registrado para o reinício fazer sentido.
@@ -894,12 +1040,22 @@ export async function reiniciarProcesso(
       if (manterNoBoot) {
         await salvarDump();
       }
+
+      return { selfGerenciado: false };
     })
   );
 }
 
 // Para um processo já registrado.
+// Bloqueado para o próprio painel: derrubaria a API que atende o pedido.
 export async function pararProcesso(unidade: UnidadeProcesso): Promise<void> {
+  if (ehProprioProcesso(unidade.processName)) {
+    throw new ErroNegocio(
+      400,
+      "Não é possível parar o processo do próprio painel pela interface: isso derrubaria a API. Use \"pm2 stop <nome>\" no terminal."
+    );
+  }
+
   return serializar(() =>
     executarNoPm2(async () => {
       const nome = await garantirProcesso(unidade);
