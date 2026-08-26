@@ -34,6 +34,12 @@ const opcoesAmbiente: Array<{ valor: AmbienteProjeto | ""; rotulo: string }> = [
   { valor: "producao", rotulo: "Produção" },
 ];
 
+// Nome do processo da API do próprio painel no PM2. Deve corresponder ao
+// rótulo do processo adicional cadastrado para o projeto "Painel de
+// Projetos". Usado para confirmar ações de auto-gerência e aguardar o
+// retorno da API após uma recriação feita pelo helper destacado.
+const PROCESSO_PROPRIO = "painel-backend";
+
 export default function AdminPage() {
   const { user, isAdmin, logout } = useAuth();
   const navigate = useNavigate();
@@ -132,6 +138,28 @@ export default function AdminPage() {
     }
   }
 
+  // Aguarda o próprio painel voltar ao ar após uma ação que recria a API
+  // (helper destacado no servidor). Consulta em silêncio — sem acionar o
+  // loading global — até o processo responder como online, ou esgota as
+  // tentativas; então recarrega a listagem.
+  async function aguardarRetornoPainel() {
+    for (let tentativa = 0; tentativa < 15; tentativa += 1) {
+      await new Promise((resolver) => setTimeout(resolver, 2000));
+      try {
+        const dados = await projectService.getAdminProjects(filtro);
+        const alvo = dados
+          .flatMap((projeto) => projeto.processes ?? [])
+          .find((processo) => processo.pm2Name === PROCESSO_PROPRIO);
+        if (alvo?.pm2Status === "online") {
+          break;
+        }
+      } catch {
+        // API ainda fora do ar; tenta novamente na próxima rodada.
+      }
+    }
+    await recarregar();
+  }
+
   async function executarAcaoPm2(
     projeto: Project,
     tipo: "enable" | "disable" | "iniciar" | "reiniciar" | "parar"
@@ -142,25 +170,36 @@ export default function AdminPage() {
 
     setAcaoPm2({ id: projeto.id, tipo });
 
+    let resposta: projectService.RespostaAcaoPm2 | undefined;
+
     try {
       switch (tipo) {
         case "enable":
-          await projectService.habilitarAutostart(projeto.id);
+          resposta = await projectService.habilitarAutostart(projeto.id);
           break;
         case "disable":
-          await projectService.desabilitarAutostart(projeto.id);
+          resposta = await projectService.desabilitarAutostart(projeto.id);
           break;
         case "iniciar":
-          await projectService.iniciarProcessoPm2(projeto.id);
+          resposta = await projectService.iniciarProcessoPm2(projeto.id);
           break;
         case "reiniciar":
-          await projectService.reiniciarProcessoPm2(projeto.id);
+          resposta = await projectService.reiniciarProcessoPm2(projeto.id);
           break;
         case "parar":
+          resposta = undefined;
           await projectService.pararProcessoPm2(projeto.id);
           break;
       }
-      await recarregar();
+
+      if (resposta?.selfGerenciado) {
+        alert(
+          "O painel será reiniciado e ficará indisponível por alguns instantes. A listagem voltará sozinha quando a API responder."
+        );
+        await aguardarRetornoPainel();
+      } else {
+        await recarregar();
+      }
     } catch (erroAcao) {
       const detalhe = (
         erroAcao as {
@@ -182,21 +221,49 @@ export default function AdminPage() {
       return;
     }
 
+    // Ações sobre o próprio backend do painel pedem confirmação explícita:
+    // a API sai do ar por alguns segundos durante a recriação. ("parar" é
+    // bloqueado pelo servidor.)
+    if (
+      (tipo === "reiniciar" || tipo === "iniciar") &&
+      processo.pm2Name === PROCESSO_PROPRIO
+    ) {
+      const confirmado = window.confirm(
+        tipo === "reiniciar"
+          ? "Reiniciar o próprio painel? Ele ficará indisponível por alguns segundos e voltará automaticamente."
+          : "Recriar o próprio painel com a configuração atual? Ele ficará indisponível por alguns segundos e voltará automaticamente."
+      );
+      if (!confirmado) {
+        return;
+      }
+    }
+
     setAcaoPm2({ id: projeto.id, tipo });
+
+    let resposta: projectService.RespostaAcaoPm2 | undefined;
 
     try {
       switch (tipo) {
         case "iniciar":
-          await projectService.iniciarProcessoExtra(processo.id);
+          resposta = await projectService.iniciarProcessoExtra(processo.id);
           break;
         case "reiniciar":
-          await projectService.reiniciarProcessoExtra(processo.id);
+          resposta = await projectService.reiniciarProcessoExtra(processo.id);
           break;
         case "parar":
+          resposta = undefined;
           await projectService.pararProcessoExtra(processo.id);
           break;
       }
-      await recarregar();
+
+      if (resposta?.selfGerenciado) {
+        alert(
+          "O painel será reiniciado e ficará indisponível por alguns instantes. A listagem voltará sozinha quando a API responder."
+        );
+        await aguardarRetornoPainel();
+      } else {
+        await recarregar();
+      }
     } catch (erroAcao) {
       const detalhe = (
         erroAcao as {
