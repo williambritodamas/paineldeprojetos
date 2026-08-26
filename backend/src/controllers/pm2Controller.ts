@@ -83,11 +83,11 @@ export async function habilitar(
 
   try {
     const unidades = pm2Service.montarUnidadesProjeto(projeto, projeto.processes);
-    await pm2Service.habilitarAutostart(unidades);
+    const selfGerenciado = await pm2Service.habilitarAutostart(unidades);
     const atualizado = await projectService.atualizarProjeto(projeto.id, {
       autostart: true,
     });
-    sucessoHttp(res, atualizado);
+    sucessoHttp(res, { ...atualizado, selfGerenciado });
   } catch (erro) {
     tratarErro(
       res,
@@ -109,11 +109,11 @@ export async function desabilitar(
 
   try {
     const unidades = pm2Service.montarUnidadesProjeto(projeto, projeto.processes);
-    await pm2Service.desabilitarAutostart(unidades);
+    const selfGerenciado = await pm2Service.desabilitarAutostart(unidades);
     const atualizado = await projectService.atualizarProjeto(projeto.id, {
       autostart: false,
     });
-    sucessoHttp(res, atualizado);
+    sucessoHttp(res, { ...atualizado, selfGerenciado });
   } catch (erro) {
     tratarErro(
       res,
@@ -134,11 +134,11 @@ export async function iniciar(
   }
 
   try {
-    await pm2Service.iniciarProcesso(
+    const resultado = await pm2Service.iniciarProcesso(
       pm2Service.montarUnidadePrincipal(projeto),
       projeto.autostart
     );
-    sucessoHttp(res, { ok: true });
+    sucessoHttp(res, { ...resultado, ok: true });
   } catch (erro) {
     tratarErro(res, erro, "Erro ao iniciar o processo no PM2.");
   }
@@ -155,11 +155,11 @@ export async function reiniciar(
   }
 
   try {
-    await pm2Service.reiniciarProcesso(
+    const resultado = await pm2Service.reiniciarProcesso(
       pm2Service.montarUnidadePrincipal(projeto),
       projeto.autostart
     );
-    sucessoHttp(res, { ok: true });
+    sucessoHttp(res, { ...resultado, ok: true });
   } catch (erro) {
     tratarErro(res, erro, "Erro ao reiniciar o processo no PM2.");
   }
@@ -194,8 +194,11 @@ export async function iniciarProcessoExtra(
   }
 
   try {
-    await pm2Service.iniciarProcesso(processo.unidade, processo.autostart);
-    sucessoHttp(res, { ok: true });
+    const resultado = await pm2Service.iniciarProcesso(
+      processo.unidade,
+      processo.autostart
+    );
+    sucessoHttp(res, { ...resultado, ok: true });
   } catch (erro) {
     tratarErro(res, erro, "Erro ao iniciar o processo no PM2.");
   }
@@ -212,8 +215,11 @@ export async function reiniciarProcessoExtra(
   }
 
   try {
-    await pm2Service.reiniciarProcesso(processo.unidade, processo.autostart);
-    sucessoHttp(res, { ok: true });
+    const resultado = await pm2Service.reiniciarProcesso(
+      processo.unidade,
+      processo.autostart
+    );
+    sucessoHttp(res, { ...resultado, ok: true });
   } catch (erro) {
     tratarErro(res, erro, "Erro ao reiniciar o processo no PM2.");
   }
