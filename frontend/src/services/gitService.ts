@@ -9,6 +9,8 @@ export interface GitPullResult {
   warning?: string;
 }
 
+export type GitSeverity = "updated" | "available" | "critical" | "urgent";
+
 export interface GitUpdatesInfo {
   projectId: number;
   hasUpdates: boolean;
@@ -17,6 +19,8 @@ export interface GitUpdatesInfo {
   currentBranch: string;
   remoteHash: string | null;
   localHash: string | null;
+  daysBehind: number;
+  severity: GitSeverity;
 }
 
 // GET /api/admin/git/updates — verifica atualizações de todos os projetos.
@@ -27,12 +31,16 @@ export async function checkAllUpdates(): Promise<GitUpdatesInfo[]> {
 
 // GET /api/admin/git/:id/updates — verifica atualizações de um projeto.
 export async function checkUpdates(projectId: number): Promise<GitUpdatesInfo> {
-  const resposta = await api.get<GitUpdatesInfo>(`/admin/git/${projectId}/updates`);
+  const resposta = await api.get<GitUpdatesInfo>(
+    `/admin/git/${projectId}/updates`
+  );
   return resposta.data;
 }
 
 // POST /api/admin/git/:id/pull — executa git pull no projeto.
 export async function gitPull(projectId: number): Promise<GitPullResult> {
-  const resposta = await api.post<GitPullResult>(`/admin/git/${projectId}/pull`);
+  const resposta = await api.post<GitPullResult>(
+    `/admin/git/${projectId}/pull`
+  );
   return resposta.data;
 }

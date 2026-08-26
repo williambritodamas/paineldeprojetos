@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import type { Project, ProjectProcess } from "../types";
 import type { StatusPorta } from "../services/healthService";
-import type { GitUpdatesInfo } from "../services/gitService";
+import type { GitUpdatesInfo, GitSeverity } from "../services/gitService";
 import { gerarUrlProjeto } from "../utils/projectUrl";
 import CategoryBadge from "./CategoryBadge";
 import EnvironmentBadge from "./EnvironmentBadge";
@@ -83,6 +83,48 @@ function infoStatus(status?: Project["pm2Status"]): {
       return {
         texto: "Desconhecido",
         classe: "bg-base-700 text-slate-400",
+      };
+  }
+}
+
+function infoGitSeverity(severity: GitSeverity, behind: number, daysBehind: number): {
+  texto: string;
+  classe: string;
+  dot: string;
+  pulsar: boolean;
+} {
+  switch (severity) {
+    case "updated":
+      return {
+        texto: "Atualizado",
+        classe:
+          "border-emerald-500/50 bg-emerald-500/15 text-emerald-400 hover:border-emerald-500/70 hover:text-emerald-300",
+        dot: "bg-emerald-500",
+        pulsar: false,
+      };
+    case "available":
+      return {
+        texto: `${behind} atualização(ões)`,
+        classe:
+          "border-amber-500/50 bg-amber-500/15 text-amber-400 hover:border-amber-500/70 hover:text-amber-300",
+        dot: "bg-amber-500",
+        pulsar: false,
+      };
+    case "critical":
+      return {
+        texto: `${behind} atualizações pendentes`,
+        classe:
+          "border-red-500/50 bg-red-500/15 text-red-400 hover:border-red-500/70 hover:text-red-300",
+        dot: "bg-red-500",
+        pulsar: false,
+      };
+    case "urgent":
+      return {
+        texto: `${daysBehind} dias sem atualizar (${behind} commits)`,
+        classe:
+          "border-purple-500/50 bg-purple-500/15 text-purple-400 hover:border-purple-500/70 hover:text-purple-300",
+        dot: "bg-purple-500",
+        pulsar: true,
       };
   }
 }
@@ -312,35 +354,43 @@ export default function AdminProjectCard({
               Parar
             </button>
 
-            {project.folderPath && (
-              <button
-                type="button"
-                disabled={gitPullExecutando}
-                onClick={() => aoGitPull(project)}
-                title={
-                  gitUpdates?.hasUpdates
-                    ? `${gitUpdates.behind} atualização(ões) disponível(is)`
-                    : "Atualizar código via git pull"
-                }
-                className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs transition disabled:opacity-40 ${
-                  gitUpdates?.hasUpdates
-                    ? "border-orange-500/50 bg-orange-500/15 text-orange-400 hover:border-orange-500/70 hover:text-orange-300"
-                    : "border-base-600 bg-base-700 text-slate-300 hover:border-purple-500/50 hover:text-purple-400"
-                }`}
-              >
-                <span className="relative">
-                  <Download className={`h-3.5 w-3.5 ${gitPullExecutando ? "animate-spin" : ""}`} />
-                  {gitUpdates?.hasUpdates && (
-                    <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-orange-500" />
-                  )}
-                </span>
-                {gitPullExecutando
-                  ? "Atualizando..."
-                  : gitUpdates?.hasUpdates
-                    ? `Git Pull (${gitUpdates.behind})`
-                    : "Git Pull"}
-              </button>
-            )}
+            {project.folderPath && (() => {
+              const gitInfo = gitUpdates
+                ? infoGitSeverity(gitUpdates.severity, gitUpdates.behind, gitUpdates.daysBehind)
+                : null;
+
+              return (
+                <button
+                  type="button"
+                  disabled={gitPullExecutando}
+                  onClick={() => aoGitPull(project)}
+                  title={
+                    gitInfo && gitUpdates?.hasUpdates
+                      ? gitInfo.texto
+                      : "Atualizar código via git pull"
+                  }
+                  className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs transition disabled:opacity-40 ${
+                    gitInfo && gitUpdates?.hasUpdates
+                      ? gitInfo.classe
+                      : "border-emerald-500/50 bg-emerald-500/15 text-emerald-400 hover:border-emerald-500/70 hover:text-emerald-300"
+                  }`}
+                >
+                  <span className="relative">
+                    <Download className={`h-3.5 w-3.5 ${gitPullExecutando ? "animate-spin" : ""}`} />
+                    {gitInfo && gitUpdates?.hasUpdates && (
+                      <span
+                        className={`absolute -right-1 -top-1 h-2 w-2 rounded-full ${gitInfo.dot} ${gitInfo.pulsar ? "animate-pulse" : ""}`}
+                      />
+                    )}
+                  </span>
+                  {gitPullExecutando
+                    ? "Atualizando..."
+                    : gitInfo && gitUpdates?.hasUpdates
+                      ? `Git Pull (${gitUpdates.behind})`
+                      : "Git Pull"}
+                </button>
+              );
+            })()}
           </div>
 
           {(project.processes?.length ?? 0) > 0 && (
