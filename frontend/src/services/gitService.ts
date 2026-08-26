@@ -3,12 +3,6 @@
 
 import api from "./api";
 
-export interface GitPullResult {
-  message: string;
-  output: string;
-  warning?: string;
-}
-
 export type GitSeverity = "updated" | "available" | "critical" | "urgent";
 
 export interface GitUpdatesInfo {
@@ -21,6 +15,26 @@ export interface GitUpdatesInfo {
   localHash: string | null;
   daysBehind: number;
   severity: GitSeverity;
+}
+
+export interface GitPullOptions {
+  pull?: boolean;
+  npmInstall?: boolean;
+  prismaMigrate?: boolean;
+  npmBuild?: boolean;
+}
+
+export interface GitPullStep {
+  command: string;
+  label: string;
+  success: boolean;
+  output: string;
+  error: string | null;
+}
+
+export interface GitPullExtendedResult {
+  message: string;
+  steps: GitPullStep[];
 }
 
 // GET /api/admin/git/updates — verifica atualizações de todos os projetos.
@@ -37,10 +51,14 @@ export async function checkUpdates(projectId: number): Promise<GitUpdatesInfo> {
   return resposta.data;
 }
 
-// POST /api/admin/git/:id/pull — executa git pull no projeto.
-export async function gitPull(projectId: number): Promise<GitPullResult> {
-  const resposta = await api.post<GitPullResult>(
-    `/admin/git/${projectId}/pull`
+// POST /api/admin/git/:id/pull — executa git pull + comandos pós-pull.
+export async function gitPull(
+  projectId: number,
+  options?: GitPullOptions
+): Promise<GitPullExtendedResult> {
+  const resposta = await api.post<GitPullExtendedResult>(
+    `/admin/git/${projectId}/pull`,
+    options || {}
   );
   return resposta.data;
 }

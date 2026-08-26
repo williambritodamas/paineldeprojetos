@@ -14,6 +14,26 @@ export interface GitPullResult {
   error: string | null;
 }
 
+export interface GitPullOptions {
+  pull?: boolean;
+  npmInstall?: boolean;
+  prismaMigrate?: boolean;
+  npmBuild?: boolean;
+}
+
+export interface GitPullStep {
+  command: string;
+  label: string;
+  success: boolean;
+  output: string;
+  error: string | null;
+}
+
+export interface GitPullExtendedResult {
+  success: boolean;
+  steps: GitPullStep[];
+}
+
 export type GitSeverity = "updated" | "available" | "critical" | "urgent";
 
 export interface GitUpdatesInfo {
@@ -227,4 +247,91 @@ export async function gitPull(
         "Erro ao executar git pull.",
     };
   }
+}
+
+// Executa um comando e retorna o resultado.
+async function executarComando(
+  comando: string,
+  cwd: string,
+  timeout: number
+): Promise<GitPullStep> {
+  const label = comando;
+  try {
+    const { stdout, stderr } = await execAsync(comando, { cwd, timeout });
+    return {
+      command: comando,
+      label,
+      success: true,
+      output: stdout.trim(),
+      error: stderr.trim() || null,
+    };
+  } catch (erro: any) {
+    return {
+      command: comando,
+      label,
+      success: false,
+      output: erro.stdout?.trim() || "",
+      error: erro.stderr?.trim() || erro.message || "Erro ao executar comando.",
+    };
+  }
+}
+
+// Executa git pull + comandos pós-pull conforme opções selecionadas.
+export async function gitPullExtended(
+  projectId: number,
+  options: GitPullOptions
+): Promise<GitPullExtendedResult | null> {
+  const projeto = await prisma.project.findUnique({
+    where: { id: projectId },
+    select: { id: true, folderPath: true },
+  });
+
+  if (!projeto || !projeto.folderPath) {
+    return null;
+  }
+
+  const cwd = projeto.folderPath;
+  const steps: GitPullStep[] = [];
+
+  // 1. Git pull (sempre primeiro se marcado)
+  if (options.pull) {
+    const step = await executarComando("git pull", cwd, 30000);
+    steps.push(step);
+    if (!step.success) {
+      return { success: false, steps };
+    }
+  }
+
+  // 2. npm install
+  if (options.npmInstall) {
+    const step = await executarComando("npm install", cwd, 120000);
+    steps.push(step);
+    if (!step.success) {
+      return { success: false, steps };
+    }
+  }
+
+  // 3. npx prisma migrate dev
+  if (options.prismaMigrate) {
+    const step = await executarComando(
+      "npx prisma migrate dev",
+      cwd,
+      60000
+    );
+    steps.push(step);
+    if (!step.success) {
+      return { success: false, steps };
+    }
+  }
+
+  // 4. npm run build
+  if (options.npmBuild) {
+    const step = await executarComando("npm run build", cwd, 120000);
+    steps.push(step);
+    if (!step.success) {
+      return { success: false, steps };
+    }
+  }
+
+  return { success: true, steps };
 }

@@ -37,7 +37,7 @@ export async function checkUpdates(
   res.json(resultado);
 }
 
-// POST /api/admin/git/:id/pull — executa git pull na pasta do projeto.
+// POST /api/admin/git/:id/pull — executa git pull + comandos pós-pull.
 export async function gitPull(req: Request, res: Response): Promise<void> {
   const projectId = Number(req.params.id);
   if (isNaN(projectId)) {
@@ -45,7 +45,15 @@ export async function gitPull(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  const resultado = await gitService.gitPull(projectId);
+  // Opções recebidas do frontend. Se não enviar, faz apenas pull.
+  const options: gitService.GitPullOptions = {
+    pull: true,
+    npmInstall: Boolean(req.body?.npmInstall),
+    prismaMigrate: Boolean(req.body?.prismaMigrate),
+    npmBuild: Boolean(req.body?.npmBuild),
+  };
+
+  const resultado = await gitService.gitPullExtended(projectId, options);
   if (!resultado) {
     res.status(404).json({ error: "Projeto não encontrado." });
     return;
@@ -53,15 +61,13 @@ export async function gitPull(req: Request, res: Response): Promise<void> {
 
   if (resultado.success) {
     res.json({
-      message: "Git pull executado com sucesso.",
-      output: resultado.output,
-      warning: resultado.error,
+      message: "Comandos executados com sucesso.",
+      steps: resultado.steps,
     });
   } else {
     res.status(400).json({
-      error: "Falha ao executar git pull.",
-      details: resultado.error,
-      output: resultado.output,
+      error: "Falha ao executar comandos.",
+      steps: resultado.steps,
     });
   }
 }

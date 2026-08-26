@@ -13,6 +13,7 @@ import ProjectForm from "../components/ProjectForm";
 import ProjectGrid from "../components/ProjectGrid";
 import ProjectModal from "../components/ProjectModal";
 import ConfirmDialog from "../components/ConfirmDialog";
+import GitPullModal from "../components/GitPullModal";
 import Loading from "../components/Loading";
 import EmptyState from "../components/EmptyState";
 import { useAuth } from "../hooks/AuthContext";
@@ -68,8 +69,12 @@ export default function AdminPage() {
     null
   );
 
-  // Git pull em andamento.
-  const [gitPullId, setGitPullId] = useState<number | null>(null);
+  // Git pull modal.
+  const [gitPullModalAberto, setGitPullModalAberto] = useState(false);
+  const [gitPullProjeto, setGitPullProjeto] = useState<Project | undefined>(undefined);
+  const [gitPullExecutando, setGitPullExecutando] = useState(false);
+  const [gitPullResultado, setGitPullResultado] = useState<gitService.GitPullStep[] | null>(null);
+  const [gitPullErro, setGitPullErro] = useState<string | null>(null);
 
   // Estatísticas calculadas a partir dos projetos carregados.
   const stats = useMemo(() => {
@@ -301,22 +306,37 @@ export default function AdminPage() {
     }
   }
 
-  async function aoGitPull(projeto: Project) {
-    if (gitPullId) return;
+  function aoGitPull(projeto: Project) {
+    setGitPullProjeto(projeto);
+    setGitPullResultado(null);
+    setGitPullErro(null);
+    setGitPullModalAberto(true);
+  }
 
-    setGitPullId(projeto.id);
+  async function executarGitPull(opcoes: {
+    pull: boolean;
+    npmInstall: boolean;
+    prismaMigrate: boolean;
+    npmBuild: boolean;
+  }) {
+    if (!gitPullProjeto) return;
+
+    setGitPullExecutando(true);
+    setGitPullErro(null);
     try {
-      const resultado = await gitService.gitPull(projeto.id);
-      alert(resultado.message + (resultado.output ? `\n\n${resultado.output}` : ""));
+      const resultado = await gitService.gitPull(gitPullProjeto.id, opcoes);
+      setGitPullResultado(resultado.steps);
       await recarregar();
     } catch (erroGit: any) {
       const detalhe =
-        erroGit?.response?.data?.details ||
         erroGit?.response?.data?.error ||
-        "Erro ao executar git pull.";
-      alert(detalhe);
+        "Erro ao executar comandos.";
+      setGitPullErro(detalhe);
+      if (erroGit?.response?.data?.steps) {
+        setGitPullResultado(erroGit.response.data.steps);
+      }
     } finally {
-      setGitPullId(null);
+      setGitPullExecutando(false);
     }
   }
 
@@ -500,7 +520,7 @@ export default function AdminPage() {
                 pm2Ocupado={acaoPm2?.id === projeto.id}
                 favorito={isFavorito(projeto.id)}
                 portStatus={getStatusProjeto(projeto.id)}
-                gitPullExecutando={gitPullId === projeto.id}
+                gitPullExecutando={gitPullModalAberto && gitPullProjeto?.id === projeto.id && gitPullExecutando}
                 gitUpdates={getStatusGitUpdates(projeto.id)}
                 aoEditar={abrirEdicao}
                 aoExcluir={(p) => setExcluindo(p)}
@@ -544,6 +564,22 @@ export default function AdminPage() {
         aoConfirmar={aoConfirmarExclusao}
         aoCancelar={() => setExcluindo(undefined)}
         carregando={removendo}
+      />
+
+      {/* Modal de Git Pull */}
+      <GitPullModal
+        aberto={gitPullModalAberto}
+        nomeProjeto={gitPullProjeto?.name ?? ""}
+        aoFechar={() => {
+          setGitPullModalAberto(false);
+          setGitPullProjeto(undefined);
+          setGitPullResultado(null);
+          setGitPullErro(null);
+        }}
+        aoConfirmar={executarGitPull}
+        executando={gitPullExecutando}
+        resultado={gitPullResultado}
+        erroGeral={gitPullErro}
       />
     </div>
   );
