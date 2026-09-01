@@ -308,53 +308,40 @@ export async function gitPullExtended(
 
   // Verifica se está em detached HEAD (após checkout de commit).
   // Se estiver, volta para o branch principal antes de fazer pull.
+  let emDetachedHead = false;
   try {
-    const { stdout: headOut } = await execAsync(
-      "git symbolic-ref -q HEAD",
-      { cwd, timeout: 5000 }
-    );
-    // Se não conseguiu obter symbolic ref, estamos em detached HEAD.
-    if (!headOut.trim()) {
-      // Detecta o branch principal (main ou master).
-      let branchPrincipal = "main";
-      try {
-        const { stdout } = await execAsync(
-          "git rev-parse --abbrev-ref HEAD@{upstream}",
-          { cwd, timeout: 5000 }
-        );
-        const upstream = stdout.trim();
-        if (upstream.startsWith("origin/")) {
-          branchPrincipal = upstream.replace("origin/", "");
-        }
-      } catch {
-        // Tenta detectar qual branch existe no remote.
-        try {
-          const { stdout: refsOut } = await execAsync(
-            "git branch -r --list 'origin/main' --list 'origin/master'",
-            { cwd, timeout: 5000 }
-          );
-          if (refsOut.includes("origin/master")) {
-            branchPrincipal = "master";
-          }
-        } catch { /* usa main como padrão */ }
-      }
-
-      const stepCheckout = await executarComando(
-        `git checkout ${branchPrincipal}`,
-        cwd,
-        10000
-      );
-      steps.push({
-        ...stepCheckout,
-        command: `git checkout ${branchPrincipal}`,
-        label: "Voltar ao branch principal",
-      });
-      if (!stepCheckout.success) {
-        return { success: false, steps };
-      }
-    }
+    await execAsync("git symbolic-ref -q HEAD", { cwd, timeout: 5000 });
   } catch {
-    // Se der erro ao verificar, continua com o pull normal.
+    // symbolic-ref retorna código de erro quando está em detached HEAD.
+    emDetachedHead = true;
+  }
+
+  if (emDetachedHead) {
+    // Detecta o branch principal (main ou master).
+    let branchPrincipal = "main";
+    try {
+      const { stdout: refsOut } = await execAsync(
+        "git branch -r --list 'origin/main' --list 'origin/master'",
+        { cwd, timeout: 5000 }
+      );
+      if (refsOut.includes("origin/master")) {
+        branchPrincipal = "master";
+      }
+    } catch { /* usa main como padrão */ }
+
+    const stepCheckout = await executarComando(
+      `git checkout ${branchPrincipal}`,
+      cwd,
+      10000
+    );
+    steps.push({
+      ...stepCheckout,
+      command: `git checkout ${branchPrincipal}`,
+      label: "Voltar ao branch principal",
+    });
+    if (!stepCheckout.success) {
+      return { success: false, steps };
+    }
   }
 
   // 1. Git pull (sempre primeiro se marcado)
