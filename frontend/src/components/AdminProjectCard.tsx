@@ -288,6 +288,43 @@ export default function AdminProjectCard({
           >
             <ExternalLink className="h-3.5 w-3.5" />
           </a>
+          {project.folderPath && (() => {
+            const gitInfo = gitUpdates
+              ? infoGitSeverity(gitUpdates.severity, gitUpdates.behind, gitUpdates.daysBehind)
+              : null;
+
+            return (
+              <button
+                type="button"
+                disabled={gitPullExecutando}
+                onClick={() => aoGitPull(project)}
+                title={
+                  gitInfo && gitUpdates?.hasUpdates
+                    ? gitInfo.texto
+                    : "Atualizar código via git pull"
+                }
+                className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-1 text-xs transition disabled:opacity-40 ${
+                  gitInfo && gitUpdates?.hasUpdates
+                    ? gitInfo.classe
+                    : "border-emerald-500/50 bg-emerald-500/15 text-emerald-400 hover:border-emerald-500/70 hover:text-emerald-300"
+                }`}
+              >
+                <span className="relative">
+                  <Download className={`h-3.5 w-3.5 ${gitPullExecutando ? "animate-spin" : ""}`} />
+                  {gitInfo && gitUpdates?.hasUpdates && (
+                    <span
+                      className={`absolute -right-1 -top-1 h-2 w-2 rounded-full ${gitInfo.dot} ${gitInfo.pulsar ? "animate-pulse" : ""}`}
+                    />
+                  )}
+                </span>
+                {gitPullExecutando
+                  ? "Atualizando..."
+                  : gitInfo && gitUpdates?.hasUpdates
+                    ? `Git (${gitUpdates.behind})`
+                    : "Git"}
+              </button>
+            );
+          })()}
         </div>
       </article>
     );

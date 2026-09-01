@@ -1,7 +1,7 @@
 // Página administrativa.
 // Permite gerenciar projetos e consultar estatísticas gerais.
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { LogOut, Plus, Users, LayoutGrid, LayoutList } from "lucide-react";
 import Header from "../components/Header";
@@ -79,8 +79,20 @@ export default function AdminPage() {
   const [gitPullResultado, setGitPullResultado] = useState<gitService.GitPullStep[] | null>(null);
   const [gitPullErro, setGitPullErro] = useState<string | null>(null);
 
-  // Modo de visualização (grid ou lista).
-  const [modoVisualizacao, setModoVisualizacao] = useState<"grid" | "lista">("grid");
+  // Modo de visualização (grid ou lista) — persiste no localStorage.
+  const [modoVisualizacao, setModoVisualizacao] = useState<"grid" | "lista">(() => {
+    try {
+      const salvo = localStorage.getItem("painel_projetos_modo_view");
+      if (salvo === "lista" || salvo === "grid") return salvo;
+    } catch { /* ignora */ }
+    return "grid";
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("painel_projetos_modo_view", modoVisualizacao);
+    } catch { /* ignora */ }
+  }, [modoVisualizacao]);
 
   // Modal de commits.
   const [commitsModalAberto, setCommitsModalAberto] = useState(false);
