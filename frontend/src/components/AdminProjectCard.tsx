@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import type { Project, ProjectProcess } from "../types";
 import type { StatusPorta } from "../services/healthService";
-import type { GitUpdatesInfo, GitSeverity } from "../services/gitService";
+import type { GitUpdatesInfo, GitSeverity, GitCommit } from "../services/gitService";
 import { gerarUrlProjeto } from "../utils/projectUrl";
 import CategoryBadge from "./CategoryBadge";
 import EnvironmentBadge from "./EnvironmentBadge";
@@ -35,6 +35,8 @@ interface Props {
   portStatus?: StatusPorta;
   gitPullExecutando?: boolean;
   gitUpdates?: GitUpdatesInfo;
+  gitCommits?: GitCommit[];
+  modo?: "grid" | "lista";
   aoEditar: (projeto: Project) => void;
   aoExcluir: (projeto: Project) => void;
   aoAlternar: (projeto: Project) => void;
@@ -161,6 +163,8 @@ export default function AdminProjectCard({
   portStatus,
   gitPullExecutando,
   gitUpdates,
+  gitCommits,
+  modo = "grid",
   aoEditar,
   aoExcluir,
   aoAlternar,
@@ -183,6 +187,105 @@ export default function AdminProjectCard({
     project.pm2Status !== "nao_registrado" &&
     project.pm2Status !== "indisponivel";
   const nomeProcesso = project.pm2Name?.trim() || `proj-${project.id}`;
+
+  if (modo === "lista") {
+    return (
+      <article className="card-padrao flex flex-row flex-wrap items-center gap-4 p-4 transition hover:border-sky-500/40">
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-base-700 shrink-0">
+          <ProjectIcon icon={project.icon} className="h-5 w-5" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-sm font-semibold text-white">{project.name}</h3>
+          <p className="text-xs text-slate-400 truncate">
+            {project.description || "Sem descrição."}
+          </p>
+          {gitCommits && gitCommits.length > 0 && (
+            <div className="flex gap-2 overflow-hidden">
+              {gitCommits.slice(0, 2).map((commit, i) => (
+                <span key={i} className="text-xs font-mono text-slate-500 truncate">
+                  {commit.hashAbreviado} — {commit.mensagem}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <CategoryBadge category={project.category} />
+          <EnvironmentBadge environment={project.environment} />
+          <ServerBadge server={project.server} />
+          <StatusBadge active={project.active} />
+          {project.hidden && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-slate-500/15 px-2 py-1 text-xs font-medium text-slate-400">
+              <EyeOff className="h-3 w-3" />
+              Oculto
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <p className="inline-flex items-center gap-1.5 rounded-lg bg-base-700 px-2 py-1 text-xs text-slate-300">
+            <LifeBuoy className="h-3 w-3 text-sky-400" />
+            {project.port}
+          </p>
+          <PortStatusBadge status={portStatus} />
+        </div>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => aoAlternar(project)}
+            title={project.active ? "Desativar projeto" : "Ativar projeto"}
+            className={
+              project.active
+                ? "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-base-600 bg-base-700 text-slate-400 transition hover:border-red-500/50 hover:text-red-400"
+                : "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-base-600 bg-base-700 text-slate-400 transition hover:border-emerald-500/50 hover:text-emerald-400"
+            }
+          >
+            <Power className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => aoEditar(project)}
+            title="Editar projeto"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-base-600 bg-base-700 text-slate-400 transition hover:border-sky-500/50 hover:text-sky-400"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => aoOcultar(project)}
+            title={project.hidden ? "Exibir na página pública" : "Ocultar da página pública"}
+            className={
+              project.hidden
+                ? "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-amber-500/50 bg-amber-500/15 text-amber-400 transition hover:border-amber-500/70 hover:text-amber-300"
+                : "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-base-600 bg-base-700 text-slate-400 transition hover:border-amber-500/50 hover:text-amber-400"
+            }
+          >
+            {project.hidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+          </button>
+          <button
+            type="button"
+            onClick={() => aoAlternarFavorito(project)}
+            title={favorito ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+            className={
+              favorito
+                ? "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-red-500/50 bg-red-500/15 text-red-400 transition hover:border-red-500/70 hover:text-red-300"
+                : "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-base-600 bg-base-700 text-slate-400 transition hover:border-red-500/50 hover:text-red-400"
+            }
+          >
+            <Heart className="h-3.5 w-3.5" fill={favorito ? "currentColor" : "none"} />
+          </button>
+          <a
+            href={urlProjeto}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-base-600 bg-base-700 text-slate-400 transition hover:border-emerald-500/50 hover:text-emerald-400"
+            title="Acessar"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
+        </div>
+      </article>
+    );
+  }
 
   return (
     <article className="card-padrao flex flex-col gap-4 p-6 transition hover:border-sky-500/40">
@@ -233,6 +336,16 @@ export default function AdminProjectCard({
         <p className="text-sm text-slate-400">
           {project.description || "Sem descrição."}
         </p>
+        {gitCommits && gitCommits.length > 0 && (
+          <div className="mt-1 space-y-0.5">
+            {gitCommits.slice(0, 2).map((commit, i) => (
+              <p key={i} className="text-xs text-slate-500 truncate">
+                <span className="font-mono text-slate-400">{commit.hashAbreviado}</span>
+                {" — "}{commit.mensagem}
+              </p>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="space-y-3">

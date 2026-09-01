@@ -37,6 +37,14 @@ export interface GitPullExtendedResult {
   steps: GitPullStep[];
 }
 
+export interface GitCommit {
+  hash: string;
+  hashAbreviado: string;
+  mensagem: string;
+  autor: string;
+  data: string;
+}
+
 // GET /api/admin/git/updates — verifica atualizações de todos os projetos.
 export async function checkAllUpdates(): Promise<GitUpdatesInfo[]> {
   const resposta = await api.get<GitUpdatesInfo[]>("/admin/git/updates");
@@ -47,6 +55,18 @@ export async function checkAllUpdates(): Promise<GitUpdatesInfo[]> {
 export async function checkUpdates(projectId: number): Promise<GitUpdatesInfo> {
   const resposta = await api.get<GitUpdatesInfo>(
     `/admin/git/${projectId}/updates`
+  );
+  return resposta.data;
+}
+
+// GET /api/admin/git/:id/commits — obtém últimos commits de um projeto.
+export async function getRecentCommits(
+  projectId: number,
+  count?: number
+): Promise<GitCommit[]> {
+  const params = count !== undefined ? `?count=${count}` : "";
+  const resposta = await api.get<GitCommit[]>(
+    `/admin/git/${projectId}/commits${params}`
   );
   return resposta.data;
 }

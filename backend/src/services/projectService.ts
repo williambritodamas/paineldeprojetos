@@ -271,6 +271,7 @@ export async function criarProjeto(
       icon: dados.icon?.trim() || null,
       port: dados.port,
       active: dados.active,
+      hidden: dados.hidden ?? false,
       environment: dados.environment?.trim() || null,
       categoryId: dados.categoryId ?? null,
       serverId: dados.serverId ?? null,
@@ -320,6 +321,7 @@ export async function atualizarProjeto(
     icon?: string | null;
     port?: number;
     active?: boolean;
+    hidden?: boolean;
     environment?: string | null;
     categoryId?: number | null;
     serverId?: number | null;
@@ -362,6 +364,9 @@ export async function atualizarProjeto(
   }
   if (dados.active !== undefined) {
     dadosAtualizados.active = dados.active;
+  }
+  if (dados.hidden !== undefined) {
+    dadosAtualizados.hidden = dados.hidden;
   }
   if (dados.environment !== undefined) {
     dadosAtualizados.environment = dados.environment?.trim() || null;

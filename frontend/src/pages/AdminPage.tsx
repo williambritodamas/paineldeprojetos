@@ -3,7 +3,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Plus, Users } from "lucide-react";
+import { LogOut, Plus, Users, LayoutGrid, LayoutList } from "lucide-react";
 import Header from "../components/Header";
 import StatsCard from "../components/StatsCard";
 import SearchBar from "../components/SearchBar";
@@ -22,6 +22,7 @@ import { useServers } from "../hooks/useServers";
 import { useFavorites } from "../hooks/useFavorites";
 import { usePortMonitor } from "../hooks/usePortMonitor";
 import { useGitUpdates } from "../hooks/useGitUpdates";
+import { useGitCommits } from "../hooks/useGitCommits";
 import { useAdminProjects } from "../hooks/useAdminProjects";
 import * as projectService from "../services/projectService";
 import * as gitService from "../services/gitService";
@@ -51,6 +52,7 @@ export default function AdminPage() {
   const { toggleFavorito, isFavorito } = useFavorites();
   const { getStatusProjeto } = usePortMonitor({ intervalMs: 30000 });
   const { getStatusProjeto: getStatusGitUpdates } = useGitUpdates({ intervalMs: 60000 });
+  const { getCommitsProjeto } = useGitCommits({ intervalMs: 60000 });
   const { projetos, carregando, erro, filtro, setFiltro, recarregar } =
     useAdminProjects();
 
@@ -75,6 +77,9 @@ export default function AdminPage() {
   const [gitPullExecutando, setGitPullExecutando] = useState(false);
   const [gitPullResultado, setGitPullResultado] = useState<gitService.GitPullStep[] | null>(null);
   const [gitPullErro, setGitPullErro] = useState<string | null>(null);
+
+  // Modo de visualização (grid ou lista).
+  const [modoVisualizacao, setModoVisualizacao] = useState<"grid" | "lista">("grid");
 
   // Estatísticas calculadas a partir dos projetos carregados.
   const stats = useMemo(() => {
@@ -493,6 +498,32 @@ export default function AdminPage() {
                   setFiltro((atual) => ({ ...atual, orderBy }))
                 }
               />
+              <div className="inline-flex rounded-lg border border-base-600 bg-base-700">
+                <button
+                  type="button"
+                  onClick={() => setModoVisualizacao("grid")}
+                  title="Visualização em grade"
+                  className={
+                    modoVisualizacao === "grid"
+                      ? "inline-flex items-center gap-1 rounded-l-lg px-2 py-1.5 text-sm text-white transition"
+                      : "inline-flex items-center gap-1 rounded-l-lg px-2 py-1.5 text-sm text-slate-400 transition hover:text-slate-300"
+                  }
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModoVisualizacao("lista")}
+                  title="Visualização em lista"
+                  className={
+                    modoVisualizacao === "lista"
+                      ? "inline-flex items-center gap-1 rounded-r-lg px-2 py-1.5 text-sm text-white transition"
+                      : "inline-flex items-center gap-1 rounded-r-lg px-2 py-1.5 text-sm text-slate-400 transition hover:text-slate-300"
+                  }
+                >
+                  <LayoutList className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           </div>
         </section>
@@ -505,7 +536,7 @@ export default function AdminPage() {
         ) : projetos.length === 0 ? (
           <EmptyState mensagem="Nenhum projeto encontrado." />
         ) : (
-          <ProjectGrid>
+          <ProjectGrid modo={modoVisualizacao}>
             {[...projetos].sort((a, b) => {
               const aFav = isFavorito(a.id);
               const bFav = isFavorito(b.id);
@@ -521,7 +552,9 @@ export default function AdminPage() {
                 favorito={isFavorito(projeto.id)}
                 portStatus={getStatusProjeto(projeto.id)}
                 gitPullExecutando={gitPullModalAberto && gitPullProjeto?.id === projeto.id && gitPullExecutando}
-                gitUpdates={getStatusGitUpdates(projeto.id)}
+                 gitUpdates={getStatusGitUpdates(projeto.id)}
+                 gitCommits={getCommitsProjeto(projeto.id)}
+                 modo={modoVisualizacao}
                 aoEditar={abrirEdicao}
                 aoExcluir={(p) => setExcluindo(p)}
                 aoAlternar={aoAlternarStatus}

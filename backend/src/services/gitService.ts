@@ -36,6 +36,14 @@ export interface GitPullExtendedResult {
 
 export type GitSeverity = "updated" | "available" | "critical" | "urgent";
 
+export interface GitCommit {
+  hash: string;
+  hashAbreviado: string;
+  mensagem: string;
+  autor: string;
+  data: string;
+}
+
 export interface GitUpdatesInfo {
   hasUpdates: boolean;
   behind: number;
@@ -162,7 +170,7 @@ export async function checkUpdates(
       const dataRemota = await obterDataCommit(projeto.folderPath, remoteHash);
 
       if (dataLocal && dataRemota) {
-        const diffMs = dataLocal.getTime() - dataRemota.getTime();
+        const diffMs = dataRemota.getTime() - dataLocal.getTime();
         daysBehind = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
       }
     }
@@ -201,7 +209,7 @@ export async function checkAllUpdates(): Promise<
   );
 
   return resultados.filter(
-    (r) => r.localHash !== null
+    (r) => r.localHash !== null && r.severity !== undefined
   ) as Array<{ projectId: number } & GitUpdatesInfo>;
 }
 
@@ -334,4 +342,47 @@ export async function gitPullExtended(
   }
 
   return { success: true, steps };
+}
+
+// Obtém os N commits mais recentes do repositorio.
+export async function getRecentCommits(
+  projectId: number,
+  count: number = 2
+): Promise<GitCommit[] | null> {
+  const projeto = await prisma.project.findUnique({
+    where: { id: projectId },
+    select: { id: true, folderPath: true },
+  });
+
+  if (!projeto || !projeto.folderPath) {
+    return null;
+  }
+
+  try {
+    const { stdout } = await execAsync(
+      `git log -${count} --format="%H|%s|%cd|%an" --date=short`,
+      { cwd: projeto.folderPath, timeout: 10000 }
+    );
+
+    if (!stdout.trim()) {
+      return [];
+    }
+
+    return stdout
+      .trim()
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => {
+        const [hash, mensagem, data, autor] = line.split("|");
+        return {
+          hash,
+          hashAbreviado: hash.substring(0, 7),
+          mensagem,
+          autor,
+          data,
+        };
+      });
+  } catch {
+    return null;
+  }
 }
