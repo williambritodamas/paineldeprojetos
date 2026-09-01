@@ -1,6 +1,6 @@
 // Modal que exibe todos os commits remotos de um projeto.
 
-import { ArrowDownAZ, ArrowUpAZ, GitCommit } from "lucide-react";
+import { ArrowDownAZ, ArrowUpAZ, Download, GitCommit } from "lucide-react";
 import { useState, useMemo } from "react";
 import type { GitCommit as GitCommitType } from "../services/gitService";
 import * as gitService from "../services/gitService";
@@ -106,26 +106,51 @@ export default function CommitsModal({
 
       {!carregando && !erro && commitsOrdenados.length > 0 && (
         <div className="max-h-[60vh] space-y-2 overflow-y-auto pr-1">
-          {commitsOrdenados.map((commit) => (
-            <div
-              key={commit.hash}
-              className="rounded-lg border border-base-600 bg-base-700/50 p-3"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <GitCommit className="h-3.5 w-3.5 shrink-0 text-sky-400" />
-                  <span className="font-mono text-xs text-sky-400">
-                    {commit.hashAbreviado}
-                  </span>
+          {commitsOrdenados.map((commit, i) => {
+            const primeiroNovo = commitsOrdenados.findIndex((c) => c.isNew);
+            const mostrarSeparador = commit.isNew && i === primeiroNovo;
+
+            return (
+              <div key={commit.hash}>
+                {mostrarSeparador && (
+                  <div className="my-2 flex items-center gap-2">
+                    <div className="h-px flex-1 bg-amber-500/40" />
+                    <span className="flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-medium text-amber-400">
+                      <Download className="h-3 w-3" />
+                      Novos commits (não pullados)
+                    </span>
+                    <div className="h-px flex-1 bg-amber-500/40" />
+                  </div>
+                )}
+                <div
+                  className={`rounded-lg border p-3 ${
+                    commit.isNew
+                      ? "border-amber-500/30 bg-amber-500/10"
+                      : "border-base-600 bg-base-700/50"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <GitCommit className="h-3.5 w-3.5 shrink-0 text-sky-400" />
+                      <span className="font-mono text-xs text-sky-400">
+                        {commit.hashAbreviado}
+                      </span>
+                      {commit.isNew && (
+                        <span className="rounded bg-amber-500/20 px-1 py-0.5 text-[10px] font-medium text-amber-400">
+                          NOVO
+                        </span>
+                      )}
+                    </div>
+                    <span className="shrink-0 text-xs text-slate-500">
+                      {commit.data}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-sm text-slate-200">{commit.mensagem}</p>
+                  <p className="mt-0.5 text-xs text-slate-500">{commit.autor}</p>
                 </div>
-                <span className="shrink-0 text-xs text-slate-500">
-                  {commit.data}
-                </span>
               </div>
-              <p className="mt-1 text-sm text-slate-200">{commit.mensagem}</p>
-              <p className="mt-0.5 text-xs text-slate-500">{commit.autor}</p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

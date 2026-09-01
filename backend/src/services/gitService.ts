@@ -42,6 +42,7 @@ export interface GitCommit {
   mensagem: string;
   autor: string;
   data: string;
+  isNew: boolean;
 }
 
 export interface GitUpdatesInfo {
@@ -387,6 +388,22 @@ export async function getRecentCommits(
     const refRemota = await obterRefRemota(projeto.folderPath);
     const refLog = refRemota || "HEAD";
 
+    // Busca hashes dos commits novos (remoto ainda não pullados).
+    const hashesNovos = new Set<string>();
+    if (refRemota) {
+      try {
+        const { stdout: novosOut } = await execAsync(
+          "git rev-list HEAD..@{u}",
+          { cwd: projeto.folderPath, timeout: 5000 }
+        );
+        novosOut
+          .trim()
+          .split("\n")
+          .filter(Boolean)
+          .forEach((h) => hashesNovos.add(h));
+      } catch { /* ignora */ }
+    }
+
     const { stdout } = await execAsync(
       `git log -${count} --format="%H|%s|%cd|%an" --date=short ${refLog}`,
       { cwd: projeto.folderPath, timeout: 10000 }
@@ -408,6 +425,7 @@ export async function getRecentCommits(
           mensagem,
           autor,
           data,
+          isNew: hashesNovos.has(hash),
         };
       });
   } catch {
@@ -437,6 +455,22 @@ export async function getAllRemoteCommits(
     const refRemota = await obterRefRemota(projeto.folderPath);
     const refLog = refRemota || "HEAD";
 
+    // Busca hashes dos commits novos (remoto ainda não pullados).
+    const hashesNovos = new Set<string>();
+    if (refRemota) {
+      try {
+        const { stdout: novosOut } = await execAsync(
+          "git rev-list HEAD..@{u}",
+          { cwd: projeto.folderPath, timeout: 5000 }
+        );
+        novosOut
+          .trim()
+          .split("\n")
+          .filter(Boolean)
+          .forEach((h) => hashesNovos.add(h));
+      } catch { /* ignora */ }
+    }
+
     const { stdout } = await execAsync(
       `git log --format="%H|%s|%cd|%an" --date=short ${refLog}`,
       { cwd: projeto.folderPath, timeout: 15000 }
@@ -458,6 +492,7 @@ export async function getAllRemoteCommits(
           mensagem,
           autor,
           data,
+          isNew: hashesNovos.has(hash),
         };
       });
   } catch {
