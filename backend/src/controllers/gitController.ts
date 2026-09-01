@@ -72,7 +72,7 @@ export async function gitPull(req: Request, res: Response): Promise<void> {
   }
 }
 
-// GET /api/admin/git/:id/commits — obtém últimos commits de um projeto.
+// GET /api/admin/git/:id/commits — obtém últimos commits remotos de um projeto.
 export async function getRecentCommits(
   req: Request,
   res: Response
@@ -84,6 +84,26 @@ export async function getRecentCommits(
   }
 
   const resultado = await gitService.getRecentCommits(projectId);
+  if (resultado === null) {
+    res.status(404).json({ error: "Projeto não encontrado." });
+    return;
+  }
+
+  res.json(resultado);
+}
+
+// GET /api/admin/git/:id/commits/all — obtém todos os commits remotos.
+export async function getAllRemoteCommits(
+  req: Request,
+  res: Response
+): Promise<void> {
+  const projectId = Number(req.params.id);
+  if (isNaN(projectId)) {
+    res.status(400).json({ error: "ID do projeto inválido." });
+    return;
+  }
+
+  const resultado = await gitService.getAllRemoteCommits(projectId);
   if (resultado === null) {
     res.status(404).json({ error: "Projeto não encontrado." });
     return;

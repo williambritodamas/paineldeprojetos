@@ -49,6 +49,7 @@ interface Props {
   aoPararProcesso: (projeto: Project, processo: ProjectProcess) => void;
   aoAlternarFavorito: (projeto: Project) => void;
   aoOcultar: (projeto: Project) => void;
+  aoVerCommits: (projeto: Project) => void;
   aoGitPull: (projeto: Project) => void;
 }
 
@@ -177,6 +178,7 @@ export default function AdminProjectCard({
   aoPararProcesso,
   aoAlternarFavorito,
   aoOcultar,
+  aoVerCommits,
   aoGitPull,
 }: Props) {
   const urlProjeto = gerarUrlProjeto(project.port);
@@ -200,13 +202,17 @@ export default function AdminProjectCard({
             {project.description || "Sem descrição."}
           </p>
           {gitCommits && gitCommits.length > 0 && (
-            <div className="flex gap-2 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => aoVerCommits(project)}
+              className="flex gap-2 overflow-hidden rounded border border-base-600 bg-base-700/50 px-2 py-0.5 transition hover:border-sky-500/40"
+            >
               {gitCommits.slice(0, 2).map((commit, i) => (
                 <span key={i} className="text-xs font-mono text-slate-500 truncate">
                   {commit.hashAbreviado} — {commit.mensagem}
                 </span>
               ))}
-            </div>
+            </button>
           )}
         </div>
         <div className="flex items-center gap-1.5 flex-wrap">
@@ -337,14 +343,19 @@ export default function AdminProjectCard({
           {project.description || "Sem descrição."}
         </p>
         {gitCommits && gitCommits.length > 0 && (
-          <div className="mt-1 space-y-0.5">
+          <button
+            type="button"
+            onClick={() => aoVerCommits(project)}
+            className="mt-1 w-full space-y-0.5 rounded-lg border border-base-600 bg-base-700/50 p-2 text-left transition hover:border-sky-500/40"
+          >
             {gitCommits.slice(0, 2).map((commit, i) => (
               <p key={i} className="text-xs text-slate-500 truncate">
                 <span className="font-mono text-slate-400">{commit.hashAbreviado}</span>
                 {" — "}{commit.mensagem}
               </p>
             ))}
-          </div>
+            <p className="mt-1 text-[10px] text-sky-400">Ver todos os commits</p>
+          </button>
         )}
       </div>
 

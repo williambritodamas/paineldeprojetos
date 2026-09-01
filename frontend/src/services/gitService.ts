@@ -71,6 +71,16 @@ export async function getRecentCommits(
   return resposta.data;
 }
 
+// GET /api/admin/git/:id/commits/all — obtém todos os commits remotos.
+export async function getAllRemoteCommits(
+  projectId: number
+): Promise<GitCommit[]> {
+  const resposta = await api.get<GitCommit[]>(
+    `/admin/git/${projectId}/commits/all`
+  );
+  return resposta.data;
+}
+
 // POST /api/admin/git/:id/pull — executa git pull + comandos pós-pull.
 export async function gitPull(
   projectId: number,

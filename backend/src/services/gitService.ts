@@ -344,7 +344,26 @@ export async function gitPullExtended(
   return { success: true, steps };
 }
 
-// Obtém os N commits mais recentes do repositorio.
+// Obtém a ref remota do branch (ex: origin/main).
+async function obterRefRemota(folderPath: string): Promise<string | null> {
+  try {
+    const { stdout: branchOut } = await execAsync(
+      "git rev-parse --abbrev-ref HEAD",
+      { cwd: folderPath, timeout: 5000 }
+    );
+    const branch = branchOut.trim();
+
+    const { stdout: remoteOut } = await execAsync(
+      `git rev-parse --abbrev-ref ${branch}@{upstream}`,
+      { cwd: folderPath, timeout: 5000 }
+    );
+    return remoteOut.trim();
+  } catch {
+    return null;
+  }
+}
+
+// Obtém os N commits mais recentes do branch remoto.
 export async function getRecentCommits(
   projectId: number,
   count: number = 2
@@ -359,9 +378,68 @@ export async function getRecentCommits(
   }
 
   try {
+    // Busca atualizações do remoto.
+    await execAsync("git fetch --quiet", {
+      cwd: projeto.folderPath,
+      timeout: 15000,
+    });
+
+    const refRemota = await obterRefRemota(projeto.folderPath);
+    const refLog = refRemota || "HEAD";
+
     const { stdout } = await execAsync(
-      `git log -${count} --format="%H|%s|%cd|%an" --date=short`,
+      `git log -${count} --format="%H|%s|%cd|%an" --date=short ${refLog}`,
       { cwd: projeto.folderPath, timeout: 10000 }
+    );
+
+    if (!stdout.trim()) {
+      return [];
+    }
+
+    return stdout
+      .trim()
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => {
+        const [hash, mensagem, data, autor] = line.split("|");
+        return {
+          hash,
+          hashAbreviado: hash.substring(0, 7),
+          mensagem,
+          autor,
+          data,
+        };
+      });
+  } catch {
+    return null;
+  }
+}
+
+// Obtém todos os commits do branch remoto (sem limite).
+export async function getAllRemoteCommits(
+  projectId: number
+): Promise<GitCommit[] | null> {
+  const projeto = await prisma.project.findUnique({
+    where: { id: projectId },
+    select: { id: true, folderPath: true },
+  });
+
+  if (!projeto || !projeto.folderPath) {
+    return null;
+  }
+
+  try {
+    await execAsync("git fetch --quiet", {
+      cwd: projeto.folderPath,
+      timeout: 15000,
+    });
+
+    const refRemota = await obterRefRemota(projeto.folderPath);
+    const refLog = refRemota || "HEAD";
+
+    const { stdout } = await execAsync(
+      `git log --format="%H|%s|%cd|%an" --date=short ${refLog}`,
+      { cwd: projeto.folderPath, timeout: 15000 }
     );
 
     if (!stdout.trim()) {

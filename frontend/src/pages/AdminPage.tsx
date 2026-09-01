@@ -14,6 +14,7 @@ import ProjectGrid from "../components/ProjectGrid";
 import ProjectModal from "../components/ProjectModal";
 import ConfirmDialog from "../components/ConfirmDialog";
 import GitPullModal from "../components/GitPullModal";
+import CommitsModal from "../components/CommitsModal";
 import Loading from "../components/Loading";
 import EmptyState from "../components/EmptyState";
 import { useAuth } from "../hooks/AuthContext";
@@ -80,6 +81,11 @@ export default function AdminPage() {
 
   // Modo de visualização (grid ou lista).
   const [modoVisualizacao, setModoVisualizacao] = useState<"grid" | "lista">("grid");
+
+  // Modal de commits.
+  const [commitsModalAberto, setCommitsModalAberto] = useState(false);
+  const [commitsModalProjetoId, setCommitsModalProjetoId] = useState<number | null>(null);
+  const [commitsModalNome, setCommitsModalNome] = useState("");
 
   // Estatísticas calculadas a partir dos projetos carregados.
   const stats = useMemo(() => {
@@ -309,6 +315,12 @@ export default function AdminPage() {
     } catch {
       alert("Erro ao alterar visibilidade do projeto.");
     }
+  }
+
+  function aoVerCommits(projeto: Project) {
+    setCommitsModalProjetoId(projeto.id);
+    setCommitsModalNome(projeto.name);
+    setCommitsModalAberto(true);
   }
 
   function aoGitPull(projeto: Project) {
@@ -567,6 +579,7 @@ export default function AdminPage() {
                 aoPararProcesso={aoPararProcesso}
                 aoAlternarFavorito={aoAlternarFavorito}
                 aoOcultar={aoOcultar}
+                aoVerCommits={aoVerCommits}
                 aoGitPull={aoGitPull}
               />
             ))}
@@ -613,6 +626,18 @@ export default function AdminPage() {
         executando={gitPullExecutando}
         resultado={gitPullResultado}
         erroGeral={gitPullErro}
+      />
+
+      {/* Modal de Commits */}
+      <CommitsModal
+        aberto={commitsModalAberto}
+        projectId={commitsModalProjetoId}
+        nomeProjeto={commitsModalNome}
+        aoFechar={() => {
+          setCommitsModalAberto(false);
+          setCommitsModalProjetoId(null);
+          setCommitsModalNome("");
+        }}
       />
     </div>
   );
