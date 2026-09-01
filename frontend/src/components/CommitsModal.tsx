@@ -1,6 +1,6 @@
 // Modal que exibe todos os commits remotos de um projeto.
 
-import { ArrowDownAZ, ArrowUpAZ, Download, GitCommit } from "lucide-react";
+import { ArrowDownAZ, ArrowUpAZ, Download, GitCommit, RotateCcw } from "lucide-react";
 import { useState, useMemo } from "react";
 import type { GitCommit as GitCommitType } from "../services/gitService";
 import * as gitService from "../services/gitService";
@@ -11,6 +11,7 @@ interface Props {
   projectId: number | null;
   nomeProjeto: string;
   aoFechar: () => void;
+  aoRestaurar: (commit: GitCommitType) => void;
 }
 
 export default function CommitsModal({
@@ -18,6 +19,7 @@ export default function CommitsModal({
   projectId,
   nomeProjeto,
   aoFechar,
+  aoRestaurar,
 }: Props) {
   const [commits, setCommits] = useState<GitCommitType[]>([]);
   const [carregando, setCarregando] = useState(false);
@@ -146,7 +148,17 @@ export default function CommitsModal({
                     </span>
                   </div>
                   <p className="mt-1 text-sm text-slate-200">{commit.mensagem}</p>
-                  <p className="mt-0.5 text-xs text-slate-500">{commit.autor}</p>
+                  <div className="mt-1 flex items-center justify-between">
+                    <p className="text-xs text-slate-500">{commit.autor}</p>
+                    <button
+                      type="button"
+                      onClick={() => aoRestaurar(commit)}
+                      className="inline-flex items-center gap-1 rounded border border-base-600 bg-base-700 px-2 py-0.5 text-[10px] text-slate-400 transition hover:border-sky-500/50 hover:text-sky-400"
+                    >
+                      <RotateCcw className="h-3 w-3" />
+                      Restaurar
+                    </button>
+                  </div>
                 </div>
               </div>
             );

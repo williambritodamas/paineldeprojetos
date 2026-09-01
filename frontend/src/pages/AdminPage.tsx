@@ -15,6 +15,7 @@ import ProjectModal from "../components/ProjectModal";
 import ConfirmDialog from "../components/ConfirmDialog";
 import GitPullModal from "../components/GitPullModal";
 import CommitsModal from "../components/CommitsModal";
+import CommitRollbackModal from "../components/CommitRollbackModal";
 import Loading from "../components/Loading";
 import EmptyState from "../components/EmptyState";
 import { useAuth } from "../hooks/AuthContext";
@@ -98,6 +99,11 @@ export default function AdminPage() {
   const [commitsModalAberto, setCommitsModalAberto] = useState(false);
   const [commitsModalProjetoId, setCommitsModalProjetoId] = useState<number | null>(null);
   const [commitsModalNome, setCommitsModalNome] = useState("");
+
+  // Modal de rollback de commit.
+  const [rollbackAberto, setRollbackAberto] = useState(false);
+  const [rollbackProjetoId, setRollbackProjetoId] = useState<number | null>(null);
+  const [rollbackCommit, setRollbackCommit] = useState<gitService.GitCommit | null>(null);
 
   // Estatísticas calculadas a partir dos projetos carregados.
   const stats = useMemo(() => {
@@ -333,6 +339,13 @@ export default function AdminPage() {
     setCommitsModalProjetoId(projeto.id);
     setCommitsModalNome(projeto.name);
     setCommitsModalAberto(true);
+  }
+
+  function aoRestaurarCommit(commit: gitService.GitCommit) {
+    if (!commitsModalProjetoId) return;
+    setRollbackProjetoId(commitsModalProjetoId);
+    setRollbackCommit(commit);
+    setRollbackAberto(true);
   }
 
   function aoGitPull(projeto: Project) {
@@ -649,6 +662,26 @@ export default function AdminPage() {
           setCommitsModalAberto(false);
           setCommitsModalProjetoId(null);
           setCommitsModalNome("");
+        }}
+        aoRestaurar={aoRestaurarCommit}
+      />
+
+      {/* Modal de Rollback */}
+      <CommitRollbackModal
+        aberto={rollbackAberto}
+        projectId={rollbackProjetoId}
+        commit={rollbackCommit}
+        aoFechar={() => {
+          setRollbackAberto(false);
+          setRollbackProjetoId(null);
+          setRollbackCommit(null);
+        }}
+        aoSucesso={() => {
+          setRollbackAberto(false);
+          setRollbackProjetoId(null);
+          setRollbackCommit(null);
+          setCommitsModalAberto(false);
+          recarregar();
         }}
       />
     </div>
