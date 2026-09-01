@@ -981,9 +981,9 @@ export async function iniciarProcesso(
   manterNoBoot = false
 ): Promise<{ selfGerenciado: boolean }> {
   // Esta API é o próprio painel: se está respondendo, o processo existe.
-  // Recria via helper para aplicar a configuração atual do banco.
+  // O controller aciona process.exit() após enviar a resposta; o PM2 com
+  // autorestart: true reinicia o processo automaticamente.
   if (ehProprioProcesso(unidade.processName)) {
-    recriarSelfDepois(unidade);
     return { selfGerenciado: true };
   }
 
@@ -1018,10 +1018,10 @@ export async function reiniciarProcesso(
   unidade: UnidadeProcesso,
   manterNoBoot = false
 ): Promise<{ selfGerenciado: boolean }> {
-  // Recriar a própria API por aqui mataria o processo no meio da operação:
-  // o início nunca aconteceria. O helper destacado assume a tarefa.
+  // O próprio painel não pode ser reiniciado por aqui (mataria o processo
+  // no meio da operação). O controller aciona process.exit() após enviar
+  // a resposta; o PM2 com autorestart: true reinicia automaticamente.
   if (ehProprioProcesso(unidade.processName)) {
-    recriarSelfDepois(unidade);
     return { selfGerenciado: true };
   }
 

@@ -160,6 +160,14 @@ export async function reiniciar(
       projeto.autostart
     );
     sucessoHttp(res, { ...resultado, ok: true });
+
+    // Se é o próprio painel, aguarda o envio da resposta e encerra.
+    // O PM2 com autorestart: true reinicia o processo automaticamente.
+    if (resultado.selfGerenciado) {
+      res.on("finish", () => {
+        setTimeout(() => process.exit(1), 500);
+      });
+    }
   } catch (erro) {
     tratarErro(res, erro, "Erro ao reiniciar o processo no PM2.");
   }
@@ -199,6 +207,12 @@ export async function iniciarProcessoExtra(
       processo.autostart
     );
     sucessoHttp(res, { ...resultado, ok: true });
+
+    if (resultado.selfGerenciado) {
+      res.on("finish", () => {
+        setTimeout(() => process.exit(1), 500);
+      });
+    }
   } catch (erro) {
     tratarErro(res, erro, "Erro ao iniciar o processo no PM2.");
   }
@@ -220,6 +234,12 @@ export async function reiniciarProcessoExtra(
       processo.autostart
     );
     sucessoHttp(res, { ...resultado, ok: true });
+
+    if (resultado.selfGerenciado) {
+      res.on("finish", () => {
+        setTimeout(() => process.exit(1), 500);
+      });
+    }
   } catch (erro) {
     tratarErro(res, erro, "Erro ao reiniciar o processo no PM2.");
   }
