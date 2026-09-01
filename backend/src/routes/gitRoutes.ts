@@ -21,5 +21,6 @@ router.get("/:id/updates", gitController.checkUpdates);
 router.post("/:id/pull", gitController.gitPull);
 router.get("/:id/commits/all", gitController.getAllRemoteCommits);
 router.get("/:id/commits", gitController.getRecentCommits);
+router.post("/:id/checkout", gitController.checkoutCommit);
 
 export default router;

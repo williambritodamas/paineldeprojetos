@@ -111,3 +111,33 @@ export async function getAllRemoteCommits(
 
   res.json(resultado);
 }
+
+// POST /api/admin/git/:id/checkout — checkout isolado para um commit.
+export async function checkoutCommit(
+  req: Request,
+  res: Response
+): Promise<void> {
+  const projectId = Number(req.params.id);
+  if (isNaN(projectId)) {
+    res.status(400).json({ error: "ID do projeto inválido." });
+    return;
+  }
+
+  const { commitHash } = req.body;
+  if (!commitHash || typeof commitHash !== "string") {
+    res.status(400).json({ error: "Hash do commit é obrigatório." });
+    return;
+  }
+
+  const resultado = await gitService.checkoutCommit(projectId, commitHash.trim());
+  if (resultado === null) {
+    res.status(404).json({ error: "Projeto não encontrado." });
+    return;
+  }
+
+  if (resultado.success) {
+    res.json({ message: resultado.message });
+  } else {
+    res.status(400).json({ error: resultado.message, details: resultado.error });
+  }
+}
