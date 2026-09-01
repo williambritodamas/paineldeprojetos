@@ -419,6 +419,15 @@ Cada card administrativo exibe os últimos 2 commits do repositório:
 - Atualizado via polling junto com as atualizações git (a cada 60 segundos);
 - Endpoint: `GET /api/admin/git/:id/commits`.
 
+### Resgate de Commits (Rollback)
+
+A partir do modal de commits, o administrador pode restaurar o projeto para qualquer commit remoto:
+
+- **Checkout isolado (detached HEAD)** — o branch principal não é alterado;
+- **Confirmação dupla** — checkbox obrigatório + botão de confirmação;
+- Para voltar ao estado atual, execute `git checkout main` na pasta do projeto;
+- Endpoint: `POST /api/admin/git/:id/checkout`.
+
 ### Filtros Persistidos
 
 Os filtros de exibição são salvos automaticamente no navegador:
@@ -549,8 +558,10 @@ Regras de segurança:
 | POST   | `/api/admin/pm2/processos/:processId/parar`     | Admin | Para um processo adicional       |
 | GET    | `/api/admin/git/updates`                | Admin         | Verifica atualizações git de todos os projetos |
 | GET    | `/api/admin/git/:id/updates`            | Admin         | Verifica atualizações git de um projeto |
-| GET    | `/api/admin/git/:id/commits`            | Admin         | Últimos commits do projeto |
+| GET    | `/api/admin/git/:id/commits`            | Admin         | Últimos 2 commits remotos do projeto |
+| GET    | `/api/admin/git/:id/commits/all`        | Admin         | Todos os commits remotos do projeto |
 | POST   | `/api/admin/git/:id/pull`               | Admin         | Executa git pull + comandos pós-pull (npm install, prisma migrate, npm build) |
+| POST   | `/api/admin/git/:id/checkout`           | Admin         | Checkout isolado (detached HEAD) para um commit específico |
 
 ### Exemplo de health check
 
