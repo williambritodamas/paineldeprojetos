@@ -402,6 +402,31 @@ Ao clicar no botão de atualização, um **modal** oferece opções de comandos 
 
 Os comandos são executados sequencialmente. Se algum falhar, a execução para e o resultado de cada passo é exibido no modal.
 
+### Visualização em Grade ou Lista
+
+O painel administrativa permite alternar entre visualização em grade (cards) e lista (linhas):
+
+- Botões de toggle no filtro (ícones `LayoutGrid` e `LayoutList`);
+- Modo grade: cards verticais com badges e botões de ação;
+- Modo lista: linhas horizontais compactas com informações essenciais;
+- O modo selecionado é salvo automaticamente no `localStorage` do navegador, persistindo entre sessões.
+
+### Últimos Commits nos Cards
+
+Cada card administrativo exibe os últimos 2 commits do repositório:
+
+- Hash abreviado (7 caracteres) e mensagem do commit;
+- Atualizado via polling junto com as atualizações git (a cada 60 segundos);
+- Endpoint: `GET /api/admin/git/:id/commits`.
+
+### Filtros Persistidos
+
+Os filtros de exibição são salvos automaticamente no navegador:
+
+- Busca, status, ambiente, categoria, servidor, ordenação;
+- Ao retornar à página, os últimos filtros são mantidos;
+- Chave no `localStorage`: `painel_projetos_filtro`.
+
 ---
 
 ## Papéis de usuário
@@ -524,6 +549,7 @@ Regras de segurança:
 | POST   | `/api/admin/pm2/processos/:processId/parar`     | Admin | Para um processo adicional       |
 | GET    | `/api/admin/git/updates`                | Admin         | Verifica atualizações git de todos os projetos |
 | GET    | `/api/admin/git/:id/updates`            | Admin         | Verifica atualizações git de um projeto |
+| GET    | `/api/admin/git/:id/commits`            | Admin         | Últimos commits do projeto |
 | POST   | `/api/admin/git/:id/pull`               | Admin         | Executa git pull + comandos pós-pull (npm install, prisma migrate, npm build) |
 
 ### Exemplo de health check
