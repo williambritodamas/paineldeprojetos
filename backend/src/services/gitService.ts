@@ -57,14 +57,18 @@ export interface GitUpdatesInfo {
 }
 
 // Calcula a severidade com base nos commits e dias de diferença.
+// - updated:  sem commits pendentes
+// - available: 1 a 3 commits atrás
+// - critical:  4 a 10 commits atrás
+// - urgent:    mais de 10 commits OU mais de 3 dias sem pull
 function calcularSeveridade(
   behind: number,
   daysBehind: number
 ): GitSeverity {
   if (behind === 0) return "updated";
-  if (daysBehind >= 3) return "urgent";
-  if (behind > 10) return "critical";
-  return "available";
+  if (behind <= 3) return "available";
+  if (behind <= 10 && daysBehind < 3) return "critical";
+  return "urgent";
 }
 
 // Obtém a data do último commit de um hash.

@@ -110,7 +110,7 @@ function infoGitSeverity(severity: GitSeverity, behind: number, daysBehind: numb
       };
     case "available":
       return {
-        texto: `${behind} atualização(ões)`,
+        texto: `${behind} commit(s) pendente(s)`,
         classe:
           "border-amber-500/50 bg-amber-500/15 text-amber-400 hover:border-amber-500/70 hover:text-amber-300",
         dot: "bg-amber-500",
@@ -118,18 +118,18 @@ function infoGitSeverity(severity: GitSeverity, behind: number, daysBehind: numb
       };
     case "critical":
       return {
-        texto: `${behind} atualizações pendentes`,
+        texto: `${behind} commits pendentes`,
         classe:
-          "border-red-500/50 bg-red-500/15 text-red-400 hover:border-red-500/70 hover:text-red-300",
-        dot: "bg-red-500",
+          "border-orange-500/50 bg-orange-500/15 text-orange-400 hover:border-orange-500/70 hover:text-orange-300",
+        dot: "bg-orange-500",
         pulsar: false,
       };
     case "urgent":
       return {
-        texto: `${daysBehind} dias sem atualizar (${behind} commits)`,
+        texto: `${behind} commits — ${daysBehind} dias sem pull`,
         classe:
-          "border-purple-500/50 bg-purple-500/15 text-purple-400 hover:border-purple-500/70 hover:text-purple-300",
-        dot: "bg-purple-500",
+          "border-red-500/50 bg-red-500/15 text-red-400 hover:border-red-500/70 hover:text-red-300",
+        dot: "bg-red-500",
         pulsar: true,
       };
   }
@@ -305,7 +305,7 @@ export default function AdminProjectCard({
                 }
                 className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-1 text-xs transition disabled:opacity-40 ${
                   gitInfo && gitUpdates?.hasUpdates
-                    ? gitInfo.classe
+                    ? `${gitInfo.classe} ${gitInfo.pulsar ? "animate-pulse" : ""}`
                     : "border-emerald-500/50 bg-emerald-500/15 text-emerald-400 hover:border-emerald-500/70 hover:text-emerald-300"
                 }`}
               >
@@ -554,7 +554,7 @@ export default function AdminProjectCard({
                   }
                   className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs transition disabled:opacity-40 ${
                     gitInfo && gitUpdates?.hasUpdates
-                      ? gitInfo.classe
+                      ? `${gitInfo.classe} ${gitInfo.pulsar ? "animate-pulse" : ""}`
                       : "border-emerald-500/50 bg-emerald-500/15 text-emerald-400 hover:border-emerald-500/70 hover:text-emerald-300"
                   }`}
                 >
