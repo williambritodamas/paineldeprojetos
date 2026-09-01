@@ -44,6 +44,7 @@ export interface GitCommit {
   autor: string;
   data: string;
   isNew: boolean;
+  isCurrent: boolean;
 }
 
 // GET /api/admin/git/updates — verifica atualizações de todos os projetos.

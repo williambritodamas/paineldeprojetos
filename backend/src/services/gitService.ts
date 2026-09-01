@@ -43,6 +43,7 @@ export interface GitCommit {
   autor: string;
   data: string;
   isNew: boolean;
+  isCurrent: boolean;
 }
 
 export interface GitUpdatesInfo {
@@ -421,30 +422,53 @@ export async function getRecentCommits(
   }
 
   try {
-    // Busca atualizações do remoto.
     await execAsync("git fetch --quiet", {
       cwd: projeto.folderPath,
       timeout: 15000,
     });
 
-    const refRemota = await obterRefRemota(projeto.folderPath);
-    const refLog = refRemota || "HEAD";
+    // Obtém o hash atual do HEAD.
+    let currentHash = "";
+    try {
+      const { stdout: headOut } = await execAsync(
+        "git rev-parse HEAD",
+        { cwd: projeto.folderPath, timeout: 5000 }
+      );
+      currentHash = headOut.trim();
+    } catch { /* ignora */ }
+
+    // Sempre tenta usar a ref remota.
+    let refLog = "HEAD";
+    try {
+      const refRemota = await obterRefRemota(projeto.folderPath);
+      if (refRemota) {
+        refLog = refRemota;
+      } else {
+        const { stdout: refsOut } = await execAsync(
+          "git branch -r --list 'origin/main' --list 'origin/master'",
+          { cwd: projeto.folderPath, timeout: 5000 }
+        );
+        if (refsOut.includes("origin/master")) {
+          refLog = "origin/master";
+        } else if (refsOut.includes("origin/main")) {
+          refLog = "origin/main";
+        }
+      }
+    } catch { /* usa HEAD como fallback */ }
 
     // Busca hashes dos commits novos (remoto ainda não pullados).
     const hashesNovos = new Set<string>();
-    if (refRemota) {
-      try {
-        const { stdout: novosOut } = await execAsync(
-          "git rev-list HEAD..@{u}",
-          { cwd: projeto.folderPath, timeout: 5000 }
-        );
-        novosOut
-          .trim()
-          .split("\n")
-          .filter(Boolean)
-          .forEach((h) => hashesNovos.add(h));
-      } catch { /* ignora */ }
-    }
+    try {
+      const { stdout: novosOut } = await execAsync(
+        `git rev-list HEAD..${refLog}`,
+        { cwd: projeto.folderPath, timeout: 5000 }
+      );
+      novosOut
+        .trim()
+        .split("\n")
+        .filter(Boolean)
+        .forEach((h) => hashesNovos.add(h));
+    } catch { /* ignora */ }
 
     const { stdout } = await execAsync(
       `git log -${count} --format="%H|%s|%cd|%an" --date=short ${refLog}`,
@@ -468,6 +492,7 @@ export async function getRecentCommits(
           autor,
           data,
           isNew: hashesNovos.has(hash),
+          isCurrent: hash === currentHash,
         };
       });
   } catch {
@@ -494,24 +519,50 @@ export async function getAllRemoteCommits(
       timeout: 15000,
     });
 
-    const refRemota = await obterRefRemota(projeto.folderPath);
-    const refLog = refRemota || "HEAD";
+    // Obtém o hash atual do HEAD (pode estar em detached HEAD).
+    let currentHash = "";
+    try {
+      const { stdout: headOut } = await execAsync(
+        "git rev-parse HEAD",
+        { cwd: projeto.folderPath, timeout: 5000 }
+      );
+      currentHash = headOut.trim();
+    } catch { /* ignora */ }
+
+    // Sempre tenta usar a ref remota para listar TODOS os commits.
+    // Se estiver em detached HEAD, obterRefRemota falha — usamos origin/main ou origin/master.
+    let refLog = "HEAD";
+    try {
+      const refRemota = await obterRefRemota(projeto.folderPath);
+      if (refRemota) {
+        refLog = refRemota;
+      } else {
+        // Tenta detectar qual branch remoto existe.
+        const { stdout: refsOut } = await execAsync(
+          "git branch -r --list 'origin/main' --list 'origin/master'",
+          { cwd: projeto.folderPath, timeout: 5000 }
+        );
+        if (refsOut.includes("origin/master")) {
+          refLog = "origin/master";
+        } else if (refsOut.includes("origin/main")) {
+          refLog = "origin/main";
+        }
+      }
+    } catch { /* usa HEAD como fallback */ }
 
     // Busca hashes dos commits novos (remoto ainda não pullados).
     const hashesNovos = new Set<string>();
-    if (refRemota) {
-      try {
-        const { stdout: novosOut } = await execAsync(
-          "git rev-list HEAD..@{u}",
-          { cwd: projeto.folderPath, timeout: 5000 }
-        );
-        novosOut
-          .trim()
-          .split("\n")
-          .filter(Boolean)
-          .forEach((h) => hashesNovos.add(h));
-      } catch { /* ignora */ }
-    }
+    try {
+      const { stdout: novosOut } = await execAsync(
+        `git rev-list HEAD..${refLog}`,
+        { cwd: projeto.folderPath, timeout: 5000 }
+      );
+      novosOut
+        .trim()
+        .split("\n")
+        .filter(Boolean)
+        .forEach((h) => hashesNovos.add(h));
+    } catch { /* ignora */ }
 
     const { stdout } = await execAsync(
       `git log --format="%H|%s|%cd|%an" --date=short ${refLog}`,
@@ -535,6 +586,7 @@ export async function getAllRemoteCommits(
           autor,
           data,
           isNew: hashesNovos.has(hash),
+          isCurrent: hash === currentHash,
         };
       });
   } catch {
@@ -549,6 +601,7 @@ export interface CheckoutResult {
 }
 
 // Faz checkout isolado (detached HEAD) para um commit específico.
+// Se commitHash for "latest", volta para o branch principal (main/master).
 export async function checkoutCommit(
   projectId: number,
   commitHash: string
@@ -563,6 +616,32 @@ export async function checkoutCommit(
   }
 
   try {
+    // Se pediu "latest", volta para o branch principal.
+    if (commitHash === "latest") {
+      let branchPrincipal = "main";
+      try {
+        const { stdout: refsOut } = await execAsync(
+          "git branch -r --list 'origin/main' --list 'origin/master'",
+          { cwd: projeto.folderPath, timeout: 5000 }
+        );
+        if (refsOut.includes("origin/master")) {
+          branchPrincipal = "master";
+        }
+      } catch { /* usa main como padrão */ }
+
+      const { stdout, stderr } = await execAsync(
+        `git checkout ${branchPrincipal}`,
+        { cwd: projeto.folderPath, timeout: 15000 }
+      );
+
+      return {
+        success: true,
+        message: stdout.trim() || `Volta ao branch ${branchPrincipal} realizada.`,
+        error: stderr.trim() || null,
+      };
+    }
+
+    // Valida se o hash existe.
     await execAsync(`git cat-file -t ${commitHash}`, {
       cwd: projeto.folderPath,
       timeout: 5000,

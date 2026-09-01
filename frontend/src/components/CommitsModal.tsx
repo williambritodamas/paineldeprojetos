@@ -1,6 +1,6 @@
 // Modal que exibe todos os commits remotos de um projeto.
 
-import { ArrowDownAZ, ArrowUpAZ, Download, GitCommit, RotateCcw } from "lucide-react";
+import { ArrowDownAZ, ArrowUpAZ, Check, Download, GitCommit, RotateCcw } from "lucide-react";
 import { useState, useMemo } from "react";
 import type { GitCommit as GitCommitType } from "../services/gitService";
 import * as gitService from "../services/gitService";
@@ -53,6 +53,19 @@ export default function CommitsModal({
     aoFechar();
   }
 
+  function handleVoltarAoUltimo() {
+    // Cria um commit sintético com hash "latest" para voltar ao branch principal.
+    aoRestaurar({
+      hash: "latest",
+      hashAbreviado: "latest",
+      mensagem: "Voltar ao último commit do branch principal",
+      autor: "",
+      data: "",
+      isNew: false,
+      isCurrent: false,
+    });
+  }
+
   const commitsOrdenados = useMemo(() => {
     const copia = [...commits];
     if (ordem === "asc") {
@@ -60,6 +73,11 @@ export default function CommitsModal({
     }
     return copia;
   }, [commits, ordem]);
+
+  // Verifica se o projeto está em detached HEAD (commit atual não é o mais recente do remoto).
+  const commitAtual = commits.find((c) => c.isCurrent);
+  const commitMaisRecente = commits.length > 0 ? commits[0] : null;
+  const emDetachedHead = commitAtual && commitMaisRecente && commitAtual.hash !== commitMaisRecente.hash;
 
   return (
     <ProjectModal
@@ -71,23 +89,35 @@ export default function CommitsModal({
         <p className="text-sm text-slate-400">
           {commits.length} commit{commits.length !== 1 ? "s" : ""} no remoto
         </p>
-        <button
-          type="button"
-          onClick={() => setOrdem(ordem === "desc" ? "asc" : "desc")}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-base-600 bg-base-700 px-2.5 py-1.5 text-xs text-slate-300 transition hover:border-sky-500/50 hover:text-sky-400"
-        >
-          {ordem === "desc" ? (
-            <>
-              <ArrowDownAZ className="h-3.5 w-3.5" />
-              Mais recente primeiro
-            </>
-          ) : (
-            <>
-              <ArrowUpAZ className="h-3.5 w-3.5" />
-              Mais antigo primeiro
-            </>
+        <div className="flex items-center gap-2">
+          {emDetachedHead && (
+            <button
+              type="button"
+              onClick={handleVoltarAoUltimo}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/50 bg-emerald-500/15 px-2.5 py-1.5 text-xs text-emerald-400 transition hover:border-emerald-500/70 hover:text-emerald-300"
+            >
+              <Check className="h-3.5 w-3.5" />
+              Voltar ao último commit
+            </button>
           )}
-        </button>
+          <button
+            type="button"
+            onClick={() => setOrdem(ordem === "desc" ? "asc" : "desc")}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-base-600 bg-base-700 px-2.5 py-1.5 text-xs text-slate-300 transition hover:border-sky-500/50 hover:text-sky-400"
+          >
+            {ordem === "desc" ? (
+              <>
+                <ArrowDownAZ className="h-3.5 w-3.5" />
+                Mais recente primeiro
+              </>
+            ) : (
+              <>
+                <ArrowUpAZ className="h-3.5 w-3.5" />
+                Mais antigo primeiro
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {carregando && (
@@ -112,6 +142,10 @@ export default function CommitsModal({
             const primeiroNovo = commitsOrdenados.findIndex((c) => c.isNew);
             const mostrarSeparador = commit.isNew && i === primeiroNovo;
 
+            // Separador para commit atual (quando em detached HEAD).
+            const primeiroAtual = commitsOrdenados.findIndex((c) => c.isCurrent);
+            const mostrarSeparadorAtual = commit.isCurrent && emDetachedHead && i === primeiroAtual;
+
             return (
               <div key={commit.hash}>
                 {mostrarSeparador && (
@@ -124,11 +158,23 @@ export default function CommitsModal({
                     <div className="h-px flex-1 bg-amber-500/40" />
                   </div>
                 )}
+                {mostrarSeparadorAtual && (
+                  <div className="my-2 flex items-center gap-2">
+                    <div className="h-px flex-1 bg-sky-500/40" />
+                    <span className="flex items-center gap-1 rounded-full bg-sky-500/15 px-2 py-0.5 text-[10px] font-medium text-sky-400">
+                      <Check className="h-3 w-3" />
+                      Você está aqui
+                    </span>
+                    <div className="h-px flex-1 bg-sky-500/40" />
+                  </div>
+                )}
                 <div
                   className={`rounded-lg border p-3 ${
-                    commit.isNew
-                      ? "border-amber-500/30 bg-amber-500/10"
-                      : "border-base-600 bg-base-700/50"
+                    commit.isCurrent
+                      ? "border-sky-500/50 bg-sky-500/10"
+                      : commit.isNew
+                        ? "border-amber-500/30 bg-amber-500/10"
+                        : "border-base-600 bg-base-700/50"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -137,6 +183,11 @@ export default function CommitsModal({
                       <span className="font-mono text-xs text-sky-400">
                         {commit.hashAbreviado}
                       </span>
+                      {commit.isCurrent && (
+                        <span className="rounded bg-sky-500/20 px-1 py-0.5 text-[10px] font-medium text-sky-400">
+                          ATUAL
+                        </span>
+                      )}
                       {commit.isNew && (
                         <span className="rounded bg-amber-500/20 px-1 py-0.5 text-[10px] font-medium text-amber-400">
                           NOVO
@@ -150,14 +201,16 @@ export default function CommitsModal({
                   <p className="mt-1 text-sm text-slate-200">{commit.mensagem}</p>
                   <div className="mt-1 flex items-center justify-between">
                     <p className="text-xs text-slate-500">{commit.autor}</p>
-                    <button
-                      type="button"
-                      onClick={() => aoRestaurar(commit)}
-                      className="inline-flex items-center gap-1 rounded border border-base-600 bg-base-700 px-2 py-0.5 text-[10px] text-slate-400 transition hover:border-sky-500/50 hover:text-sky-400"
-                    >
-                      <RotateCcw className="h-3 w-3" />
-                      Restaurar
-                    </button>
+                    {!commit.isCurrent && (
+                      <button
+                        type="button"
+                        onClick={() => aoRestaurar(commit)}
+                        className="inline-flex items-center gap-1 rounded border border-base-600 bg-base-700 px-2 py-0.5 text-[10px] text-slate-400 transition hover:border-sky-500/50 hover:text-sky-400"
+                      >
+                        <RotateCcw className="h-3 w-3" />
+                        Restaurar
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
