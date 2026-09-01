@@ -93,3 +93,19 @@ export async function gitPull(
   );
   return resposta.data;
 }
+
+export interface CheckoutResult {
+  message: string;
+}
+
+// POST /api/admin/git/:id/checkout — checkout isolado para um commit.
+export async function checkoutCommit(
+  projectId: number,
+  commitHash: string
+): Promise<CheckoutResult> {
+  const resposta = await api.post<CheckoutResult>(
+    `/admin/git/${projectId}/checkout`,
+    { commitHash }
+  );
+  return resposta.data;
+}
