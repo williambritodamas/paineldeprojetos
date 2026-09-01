@@ -264,6 +264,38 @@ export function recriarSelfDepois(unidade: UnidadeProcesso): void {
   }
 }
 
+// Agenda o reinício do próprio painel via script detached simples.
+// Diferente do recriarSelfDepois (que recria do zero), este apenas
+// aciona pm2.restart após um delay — funciona como backup do autorestart.
+export function agendarRestartSelf(nomeProcesso: string): void {
+  let caminhoScript = "";
+  let atual = __dirname;
+  for (let nivel = 0; nivel < 5; nivel += 1) {
+    const candidato = path.join(atual, "scripts", "pm2-restart-self.cjs");
+    if (fs.existsSync(candidato)) {
+      caminhoScript = candidato;
+      break;
+    }
+    atual = path.join(atual, "..");
+  }
+  if (!caminhoScript) {
+    caminhoScript = path.join(process.cwd(), "scripts", "pm2-restart-self.cjs");
+  }
+  if (!fs.existsSync(caminhoScript)) {
+    return;
+  }
+
+  try {
+    const filho = spawn(process.execPath, [caminhoScript, nomeProcesso], {
+      detached: true,
+      stdio: "ignore",
+    });
+    filho.unref();
+  } catch {
+    // Ignora falha — o autorestart do PM2 continua funcionando.
+  }
+}
+
 // Remove entradas pelo nome diretamente do dump de boot (sem tocar nos
 // processos vivos). Usado quando o painel desabilita o próprio início
 // automático: mantém a API no ar e apenas a tira da restauração do boot.
@@ -982,8 +1014,10 @@ export async function iniciarProcesso(
 ): Promise<{ selfGerenciado: boolean }> {
   // Esta API é o próprio painel: se está respondendo, o processo existe.
   // O controller aciona process.exit() após enviar a resposta; o PM2 com
-  // autorestart: true reinicia o processo automaticamente.
+  // autorestart: true reinicia o processo automaticamente. O timer
+  // agendado abaixo funciona como backup caso o autorestart falhe.
   if (ehProprioProcesso(unidade.processName)) {
+    agendarRestartSelf(unidade.processName);
     return { selfGerenciado: true };
   }
 
@@ -1020,8 +1054,10 @@ export async function reiniciarProcesso(
 ): Promise<{ selfGerenciado: boolean }> {
   // O próprio painel não pode ser reiniciado por aqui (mataria o processo
   // no meio da operação). O controller aciona process.exit() após enviar
-  // a resposta; o PM2 com autorestart: true reinicia automaticamente.
+  // a resposta; o PM2 com autorestart: true reinicia automaticamente. O
+  // timer agendado abaixo funciona como backup caso o autorestart falhe.
   if (ehProprioProcesso(unidade.processName)) {
+    agendarRestartSelf(unidade.processName);
     return { selfGerenciado: true };
   }
 
