@@ -499,3 +499,51 @@ export async function getAllRemoteCommits(
     return null;
   }
 }
+
+export interface CheckoutResult {
+  success: boolean;
+  message: string;
+  error: string | null;
+}
+
+// Faz checkout isolado (detached HEAD) para um commit específico.
+export async function checkoutCommit(
+  projectId: number,
+  commitHash: string
+): Promise<CheckoutResult | null> {
+  const projeto = await prisma.project.findUnique({
+    where: { id: projectId },
+    select: { id: true, folderPath: true },
+  });
+
+  if (!projeto || !projeto.folderPath) {
+    return null;
+  }
+
+  try {
+    await execAsync(`git cat-file -t ${commitHash}`, {
+      cwd: projeto.folderPath,
+      timeout: 5000,
+    });
+
+    const { stdout, stderr } = await execAsync(
+      `git checkout ${commitHash}`,
+      { cwd: projeto.folderPath, timeout: 15000 }
+    );
+
+    return {
+      success: true,
+      message: stdout.trim() || `Checkout realizado para ${commitHash.substring(0, 7)}`,
+      error: stderr.trim() || null,
+    };
+  } catch (erro: any) {
+    return {
+      success: false,
+      message: "Erro ao realizar checkout.",
+      error:
+        erro.stderr?.trim() ||
+        erro.message ||
+        "Erro desconhecido ao executar git checkout.",
+    };
+  }
+}
